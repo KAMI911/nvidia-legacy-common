@@ -1,0 +1,188 @@
+# drivers.yaml — single source of truth for every legacy NVIDIA driver series.
+#
+# Consumed by:
+#   scripts/verify-run.sh      (download + checksum the .run installers)
+#   scripts/render-debian.py   (render debian/ from debian-template/<series>/)
+#   scripts/apply-patches.sh   (select + apply the right patch series)
+#   CI matrix generation       (.github/workflows/*)
+#
+# Checksums: run `scripts/verify-run.sh --update <series>` to populate the
+# `sha256` fields from the real upstream artifacts. Never hand-edit a hash.
+# A value of "UNVERIFIED" makes verify-run.sh refuse to proceed in CI.
+#
+# xorg_abi_max: highest xserver video driver ABI the (patched) X driver loads
+#   against. Targets whose xserver ABI exceeds this get `Option "IgnoreABI"`
+#   auto-injected AND are marked best-effort (non-blocking CI).
+# kernel_max: highest mainline kernel the (patched) kernel module builds against.
+
+schema_version: 1
+
+defaults:
+  # Upstream mirrors. {arch_dir} in {x86_64|x86}, {ver} = version.
+  url_template: "https://download.nvidia.com/XFree86/Linux-{arch_dir}/{ver}/{run}"
+  url_template_legacy: "https://us.download.nvidia.com/XFree86/Linux-{arch_dir}/{ver}/{run}"
+  # NVIDIA does not publish detached signatures for XFree86 .run files; integrity
+  # is anchored on pinned sha256 + the reproducible-build .buildinfo chain.
+  gpg: null
+
+series:
+
+  "470xx":
+    version: "470.256.02"
+    status: supported            # supported | best-effort | experimental
+    gpu_families: "Kepler (GeForce 600/700 series)"
+    eol_note: "Upstream legacy branch, security fixes only until ~2026-09."
+    architectures: [amd64]        # no i386 kernel module upstream
+    lib_architectures: [amd64, i386]
+    xorg_abi_max: 25
+    kernel_max: "6.12"
+    runs:
+      amd64:
+        run: "NVIDIA-Linux-x86_64-470.256.02.run"
+        url_kind: default
+        sha256: "UNVERIFIED"
+    provides_egl: true
+    provides_vulkan: true
+    provides_nvenc: true
+
+  "390xx":
+    version: "390.157"
+    status: supported
+    gpu_families: "Fermi, Kepler (GeForce 400/500/600/700 series)"
+    eol_note: "Upstream EOL 2022-12. Community-patched for newer kernels/Xorg."
+    architectures: [amd64, i386]
+    lib_architectures: [amd64, i386]
+    xorg_abi_max: 25
+    kernel_max: "6.12"
+    runs:
+      amd64:
+        run: "NVIDIA-Linux-x86_64-390.157.run"
+        url_kind: default
+        sha256: "UNVERIFIED"
+      i386:
+        run: "NVIDIA-Linux-x86-390.157.run"
+        url_kind: default
+        sha256: "UNVERIFIED"
+    provides_egl: true
+    provides_vulkan: true
+    provides_nvenc: false
+
+  "340xx":
+    version: "340.108"
+    status: supported
+    gpu_families: "GeForce 8/9/200/300 series (G8x, G9x, GT2xx)"
+    eol_note: "Upstream EOL 2019-12. Known unfixable security issues — ship with a loud warning."
+    architectures: [amd64, i386]
+    lib_architectures: [amd64, i386]
+    xorg_abi_max: 24
+    kernel_max: "6.12"
+    runs:
+      amd64:
+        run: "NVIDIA-Linux-x86_64-340.108.run"
+        url_kind: default
+        sha256: "UNVERIFIED"
+      i386:
+        run: "NVIDIA-Linux-x86-340.108.run"
+        url_kind: default
+        sha256: "UNVERIFIED"
+    provides_egl: false
+    provides_vulkan: false
+    provides_nvenc: false
+
+  "304xx":
+    version: "304.137"
+    status: best-effort
+    gpu_families: "GeForce 6/7 series (NV4x, G7x)"
+    eol_note: "Upstream EOL 2017-09. Xorg ABI 23 max; newer targets need heavy patching."
+    architectures: [amd64, i386]
+    lib_architectures: [amd64, i386]
+    xorg_abi_max: 23
+    kernel_max: "5.15"
+    runs:
+      amd64:
+        run: "NVIDIA-Linux-x86_64-304.137.run"
+        url_kind: default
+        sha256: "UNVERIFIED"
+      i386:
+        run: "NVIDIA-Linux-x86-304.137.run"
+        url_kind: default
+        sha256: "UNVERIFIED"
+    provides_egl: false
+    provides_vulkan: false
+    provides_nvenc: false
+
+  "173xx":
+    version: "173.14.39"
+    status: experimental
+    gpu_families: "GeForce FX 5xxx series (NV3x)"
+    eol_note: "Upstream EOL 2013. Xorg ABI ~15 max. Debian 11 / older targets only."
+    architectures: [amd64, i386]
+    lib_architectures: [amd64, i386]
+    xorg_abi_max: 15
+    kernel_max: "4.9"
+    runs:
+      amd64:
+        run: "NVIDIA-Linux-x86_64-173.14.39-pkg2.run"
+        url_kind: legacy
+        sha256: "UNVERIFIED"
+      i386:
+        run: "NVIDIA-Linux-x86-173.14.39-pkg1.run"
+        url_kind: legacy
+        sha256: "UNVERIFIED"
+    provides_egl: false
+    provides_vulkan: false
+    provides_nvenc: false
+
+  "96xx":
+    version: "96.43.23"
+    status: experimental
+    gpu_families: "GeForce 2/3/4 Ti series (NV1x, NV2x)"
+    eol_note: "Upstream EOL 2012. Xorg ABI ~10 max. i386-focused."
+    architectures: [amd64, i386]
+    lib_architectures: [amd64, i386]
+    xorg_abi_max: 10
+    kernel_max: "3.13"
+    runs:
+      amd64:
+        run: "NVIDIA-Linux-x86_64-96.43.23-pkg2.run"
+        url_kind: legacy
+        sha256: "UNVERIFIED"
+      i386:
+        run: "NVIDIA-Linux-x86-96.43.23-pkg1.run"
+        url_kind: legacy
+        sha256: "UNVERIFIED"
+    provides_egl: false
+    provides_vulkan: false
+    provides_nvenc: false
+
+  "71xx":
+    version: "71.86.15"
+    status: experimental
+    gpu_families: "TNT/TNT2, GeForce 256, GeForce 2/4 MX (NV0x, NV1x)"
+    eol_note: "Upstream EOL 2011. Xorg ABI ~4 max. i386-focused, historical target only."
+    architectures: [amd64, i386]
+    lib_architectures: [amd64, i386]
+    xorg_abi_max: 4
+    kernel_max: "3.9"
+    runs:
+      amd64:
+        run: "NVIDIA-Linux-x86_64-71.86.15-pkg2.run"
+        url_kind: legacy
+        sha256: "UNVERIFIED"
+      i386:
+        run: "NVIDIA-Linux-x86-71.86.15-pkg1.run"
+        url_kind: legacy
+        sha256: "UNVERIFIED"
+    provides_egl: false
+    provides_vulkan: false
+    provides_nvenc: false
+
+# Distro targets. `xserver_abi` is the video driver ABI shipped by that release;
+# compared against series.xorg_abi_max to decide IgnoreABI + best-effort status.
+targets:
+  debian11:   { obs_repo: Debian_11,     codename: bullseye, xserver_abi: 24, i386_kernel: true,  default_kernel: "5.10" }
+  debian12:   { obs_repo: Debian_12,     codename: bookworm, xserver_abi: 25, i386_kernel: true,  default_kernel: "6.1" }
+  debian13:   { obs_repo: Debian_13,     codename: trixie,   xserver_abi: 25, i386_kernel: true,  default_kernel: "6.12" }
+  ubuntu2004: { obs_repo: xUbuntu_20.04, codename: focal,    xserver_abi: 24, i386_kernel: false, default_kernel: "5.4" }
+  ubuntu2204: { obs_repo: xUbuntu_22.04, codename: jammy,    xserver_abi: 25, i386_kernel: false, default_kernel: "5.15" }
+  ubuntu2404: { obs_repo: xUbuntu_24.04, codename: noble,    xserver_abi: 25, i386_kernel: false, default_kernel: "6.8" }

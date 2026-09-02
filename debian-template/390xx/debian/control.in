@@ -1,0 +1,119 @@
+Source: nvidia-legacy-@SERIES@
+Section: non-free/x11
+Priority: optional
+Maintainer: nvidia-legacy CI <ci@nvidia-legacy.invalid>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-dkms,
+ dpkg-dev (>= 1.20.0),
+%if modules
+ linux-headers-generic | linux-headers-amd64 | linux-headers-686-pae,
+%endif
+ xz-utils,
+Rules-Requires-Root: no
+Standards-Version: 4.6.2
+Homepage: https://github.com/kami911/nvidia-legacy
+Vcs-Git: https://github.com/kami911/nvidia-legacy-@FLAVOUR@.git
+Vcs-Browser: https://github.com/kami911/nvidia-legacy-@FLAVOUR@
+
+Package: nvidia-legacy-@SERIES@-driver
+Architecture: @KERNEL_ARCHS@
+Depends:
+ ${misc:Depends},
+ nvidia-legacy-@SERIES@-driver-libs (= ${binary:Version}),
+ nvidia-legacy-@SERIES@-driver-bin (= ${binary:Version}),
+ xserver-xorg-video-nvidia-legacy-@SERIES@ (= ${binary:Version}),
+ nvidia-legacy-@SERIES@-kernel-support (= ${binary:Version}),
+%if dkms
+ nvidia-legacy-@SERIES@-kernel-dkms (= ${binary:Version}),
+%endif
+%if modules
+ nvidia-legacy-@SERIES@-kernel-${kernel:Flavour} | nvidia-legacy-@SERIES@-kernel-dkms,
+%endif
+Recommends: libgl1-nvidia-legacy-@SERIES@-glx
+Conflicts: nvidia-driver, nvidia-legacy-340xx-driver, nvidia-legacy-470xx-driver
+Description: NVIDIA legacy @VERSION@ driver metapackage (@GPU_FAMILIES@)
+ The @VERSION@ driver from the NVIDIA @SERIES@ legacy series, repackaged as a
+ reproducible build for @CODENAME@.
+ .
+ Supported hardware: @GPU_FAMILIES@.
+ .
+ UPSTREAM STATUS: @EOL_NOTE@
+%if best_effort
+ .
+ This package is BEST-EFFORT for @TARGET@: the shipped X server ABI
+ (@TARGET_XSERVER_ABI@) is newer than what this driver officially supports
+ (@XORG_ABI_MAX@). IgnoreABI is enabled automatically. Test before relying on it.
+%endif
+
+Package: nvidia-legacy-@SERIES@-driver-libs
+Architecture: @KERNEL_ARCHS@
+Multi-Arch: same
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Provides: nvidia-legacy-@SERIES@-driver-libs-nonglvnd
+Description: NVIDIA legacy @VERSION@ driver — core runtime libraries
+ Shared libraries used by the NVIDIA @VERSION@ driver: libnvidia-glcore,
+ libnvidia-tls, libnvidia-eglcore and friends. Install the :i386 variant
+ alongside for 32-bit OpenGL applications.
+
+Package: nvidia-legacy-@SERIES@-driver-bin
+Architecture: @KERNEL_ARCHS@
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: NVIDIA legacy @VERSION@ driver — utilities
+ nvidia-smi, nvidia-settings' backend, nvidia-xconfig, nvidia-debugdump and
+ the nvidia-persistenced daemon for the @VERSION@ driver.
+
+Package: libgl1-nvidia-legacy-@SERIES@-glx
+Architecture: @KERNEL_ARCHS@
+Multi-Arch: same
+Section: non-free/libs
+Depends: ${misc:Depends}, ${shlibs:Depends}, nvidia-legacy-@SERIES@-driver-libs (= ${binary:Version})
+Provides: libgl1-nvidia-glx
+Description: NVIDIA legacy @VERSION@ driver — libGL / GLX
+ The NVIDIA implementation of libGL and the GLX extension for the @VERSION@
+ driver, wired through glvnd where the distro provides it.
+
+Package: xserver-xorg-video-nvidia-legacy-@SERIES@
+Architecture: @KERNEL_ARCHS@
+Depends:
+ ${misc:Depends}, ${shlibs:Depends},
+ libgl1-nvidia-legacy-@SERIES@-glx (= ${binary:Version}),
+ nvidia-legacy-@SERIES@-kernel-support (= ${binary:Version}),
+Provides: xorg-driver-video
+Description: NVIDIA legacy @VERSION@ driver — Xorg driver
+ The nvidia_drv.so X.Org video driver from the @VERSION@ release.
+ Officially targets X server video driver ABI <= @XORG_ABI_MAX@.
+
+Package: nvidia-legacy-@SERIES@-vdpau-driver
+Architecture: @KERNEL_ARCHS@
+Multi-Arch: same
+Section: non-free/libs
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Provides: vdpau-driver
+Description: NVIDIA legacy @VERSION@ driver — VDPAU backend
+ libvdpau_nvidia.so, the VDPAU hardware video acceleration backend.
+
+Package: nvidia-legacy-@SERIES@-kernel-support
+Architecture: @KERNEL_ARCHS@
+Depends: ${misc:Depends}
+Provides: nvidia-legacy-@SERIES@-kernel-support-nonglvnd
+Description: NVIDIA legacy @VERSION@ driver — kernel/X integration glue
+ Ships the nouveau blacklist, the modprobe alias, the initramfs hook, the udev
+ rules and the /etc/X11/xorg.conf.d snippet for the @VERSION@ driver.
+%if ignoreabi
+ The snippet sets Option "IgnoreABI" "1" because @TARGET@ ships a newer X ABI.
+%endif
+
+%if dkms
+Package: nvidia-legacy-@SERIES@-kernel-dkms
+Architecture: @KERNEL_ARCHS@
+Section: non-free/kernel
+Depends: ${misc:Depends}, dkms (>= 3.0.3)
+Recommends: nvidia-legacy-@SERIES@-driver-libs
+Provides: nvidia-legacy-@SERIES@-kernel-MODULE
+Description: NVIDIA legacy @VERSION@ driver — DKMS kernel module source
+ DKMS source for the nvidia, nvidia-modeset, nvidia-drm and nvidia-uvm kernel
+ modules from the @VERSION@ release. Rebuilt automatically for every installed
+ kernel (Debian, Ubuntu HWE, mainline PPA and Ubuntu kernel PPA).
+ Community patches extend build support to Linux <= @KERNEL_MAX@.
+%endif

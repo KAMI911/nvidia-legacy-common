@@ -1,0 +1,5 @@
+---
+Name: NVIDIA Linux Display Driver (legacy 390xx)
+Homepage: https://www.nvidia.com/en-us/drivers/unix/
+Repackaged-From: https://download.nvidia.com/XFree86/
+Repackaging-Repo: https://github.com/kami911/nvidia-legacy

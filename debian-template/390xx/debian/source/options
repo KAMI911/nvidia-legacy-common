@@ -1,0 +1,7 @@
+# Keep the source package reproducible and small.
+extend-diff-ignore = "^[^/]*[.]orig.*$"
+tar-ignore = ".git"
+tar-ignore = "*.o"
+tar-ignore = "*.ko"
+compression = "xz"
+compression-level = 9
