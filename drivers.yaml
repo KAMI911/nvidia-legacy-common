@@ -102,6 +102,7 @@ series:
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
     xorg_abi_max: 24
+    x_driver_max_abi: 25          # loads on Xorg 21 with IgnoreABI (butterfly PPA)
     kernel_max: "7.2"
     runs:
       amd64:
