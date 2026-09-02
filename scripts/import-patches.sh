@@ -2,8 +2,11 @@
 # import-patches.sh — pull compatibility patches from the upstream sources listed
 # in patches/<series>/PROVENANCE.toml into patches/<series>/{build,kernel,xorg}/.
 #
-#   import-patches.sh <series> [--source debian|butterfly|arch|meowice] [--dry-run]
+#   import-patches.sh <series> [--source <id>] [--dry-run]
 #   import-patches.sh --check <series>     # verify PROVENANCE.toml <-> files match
+#
+# Source <id> is one from patches/<series>/PROVENANCE.toml or the shared
+# patches/SOURCES.toml (aur-390, joanbm-470, debian, butterfly, meowice, ...).
 #
 # This does NOT auto-commit. It stages files + prints a diff of PROVENANCE gaps;
 # a human reviews licence + attribution before committing (see CONTRIBUTING.md).
@@ -53,16 +56,28 @@ fetch_source() {
     || { warn "clone failed for $id"; return 1; }
 }
 
-# Parse the [[source]] blocks with a tiny awk state machine.
-python3 - "$prov" "$ONLY" "$DRY" "$pdir" "$work" <<'PY'
+# Sources = this series' PROVENANCE [[source]] blocks, merged with any entry in
+# ../SOURCES.toml whose `scope` names this series. AUR git URLs clone fine even
+# though the AUR web UI is behind Anubis.
+python3 - "$prov" "$ONLY" "$DRY" "$pdir" "$work" "$series" <<'PY'
 import sys, tomllib, subprocess, pathlib, shutil
-prov, only, dry, pdir, work = sys.argv[1:6]
+prov, only, dry, pdir, work, series = sys.argv[1:7]
 doc = tomllib.load(open(prov, "rb"))
 pdir, work = pathlib.Path(pdir), pathlib.Path(work)
-for src in doc.get("source", []):
-    if only and src["id"] != only:
+
+srcs = {s["id"]: s for s in doc.get("source", [])}
+shared = pdir.parent / "SOURCES.toml"
+if shared.exists():
+    for s in tomllib.load(open(shared, "rb")).get("source", []):
+        scope = str(s.get("scope", ""))
+        if s["id"] not in srcs and (scope in ("all",) or series in scope):
+            srcs.setdefault(s["id"], s)
+            srcs[s["id"]]["git"] = s["git"].replace("{SERIES}", series.rstrip("x"))
+
+for sid, src in srcs.items():
+    if only and sid != only:
         continue
-    dest = work / src["id"]
+    dest = work / sid
     ref = src.get("branch")
     cmd = ["git", "clone", "--depth", "1"] + (["--branch", ref] if ref else []) + [src["git"], str(dest)]
     print("::", " ".join(cmd))
@@ -75,8 +90,8 @@ for src in doc.get("source", []):
     sub = src.get("path", "")
     root = dest / sub if sub else dest
     found = list(root.rglob("*.patch")) + list(root.rglob("*.diff"))
-    print(f"   {src['id']}: {len(found)} candidate patch files")
-    stage = pdir / "_incoming" / src["id"]
+    print(f"   {sid}: {len(found)} candidate patch files")
+    stage = pdir / "_incoming" / sid
     stage.mkdir(parents=True, exist_ok=True)
     for f in found:
         shutil.copy2(f, stage / f.name)

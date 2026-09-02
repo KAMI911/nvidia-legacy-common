@@ -1,0 +1,77 @@
+# Master registry of upstream patch sources for the legacy NVIDIA drivers.
+# Per-series patches/<series>/PROVENANCE.toml [[source]] blocks reference these
+# by `id`. import-patches.sh clones them (git works even though the AUR *web*
+# UI is behind Anubis — `git clone https://aur.archlinux.org/<pkg>.git` is fine).
+#
+# Priority order when the same fix exists in several places:
+#   1. dedicated mainline-patch repo (joanbm/*)      — cleanest, per-kernel, tested
+#   2. Debian nvidia-team                            — policy-clean, well reviewed
+#   3. AUR nvidia-<series>xx-dkms                     — fast-moving, covers newest kernels
+#   4. butterfly PPA / MeowIce / Frogging-Family     — distro-specific / bundled
+
+[[source]]
+id = "debian"
+scope = "all"
+git = "https://salsa.debian.org/nvidia-team/nvidia-graphics-drivers-legacy-{SERIES}xx.git"
+path = "debian/patches"
+note = "{SERIES} in 304|340|390; 470 lives in the main nvidia-graphics-drivers repo"
+license = "mostly Expat / public-domain build fixes; check debian/copyright"
+
+[[source]]
+id = "butterfly"
+scope = "340xx,390xx"
+git = "https://github.com/kelebek333/nvidia-legacy"
+ppa = "ppa:kelebek333/nvidia-legacy"
+note = "Ubuntu-oriented; ships ready debian/ dirs + IgnoreABI handling for Xorg 21+"
+
+[[source]]
+id = "aur-340"
+scope = "340xx"
+git = "https://aur.archlinux.org/nvidia-340xx-dkms.git"
+also = "https://aur.archlinux.org/nvidia-340xx-utils.git"
+note = "340.108-38+, patches kernel-6.x + gcc-14/15; git clone OK (web = Anubis)"
+
+[[source]]
+id = "aur-390"
+scope = "390xx"
+git = "https://aur.archlinux.org/nvidia-390xx-dkms.git"
+also = "https://aur.archlinux.org/nvidia-390xx-utils.git"
+note = "390.157-17+, patches: kernel-6.12/6.13/6.14/6.15/6.17, gcc-14, gcc-15"
+
+[[source]]
+id = "aur-470"
+scope = "470xx"
+git = "https://aur.archlinux.org/nvidia-470xx-dkms.git"
+also = "https://aur.archlinux.org/nvidia-470xx-utils.git"
+note = "470.256.02-8.x+, kernel 6.14/6.15 + gcc14"
+
+[[source]]
+id = "aur-580"
+scope = "580xx"
+git = "https://aur.archlinux.org/nvidia-580xx-dkms.git"
+also = "https://aur.archlinux.org/nvidia-580xx-open-dkms.git"
+note = "ACTIVE branch (580.95.05 .. 580.178.04+); proprietary + open variants"
+
+[[source]]
+id = "joanbm-470"
+scope = "470xx"
+git = "https://github.com/joanbm/nvidia-470xx-linux-mainline"
+note = "PRIMARY 470xx source. Per-kernel patches to head; roughly tracks AUR but ahead. MIT-ish, per-file headers."
+
+[[source]]
+id = "meowice"
+scope = "340xx,390xx,470xx"
+git = "https://github.com/MeowIce/nvidia-legacy"
+note = "branch per driver version; bundled .run + kernel patches 5.8..6.8+; MIT"
+
+[[source]]
+id = "frogging-family"
+scope = "current,open"
+git = "https://github.com/Frogging-Family/nvidia-all"
+note = "not legacy, but good reference for the open-module + Xorg glue if an 'open' track is added"
+
+[[source]]
+id = "arch-open"
+scope = "open"
+git = "https://gitlab.archlinux.org/archlinux/packaging/packages/nvidia-open.git"
+note = "official Arch nvidia-open-dkms PKGBUILD — reference for the open-kernel-module packaging (580xx-open, future 590+)"

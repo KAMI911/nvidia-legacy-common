@@ -27,15 +27,37 @@ defaults:
 
 series:
 
+  "580xx":
+    version: "580.95.05"         # ACTIVE legacy branch — bump as NVIDIA respins
+    status: supported
+    gpu_families: "Maxwell, Pascal, Volta (GeForce GTX 700/900/1000, TITAN V)"
+    eol_note: >
+      Last driver branch for Maxwell/Pascal/Volta. NVIDIA still ships kernel-compat
+      + security fixes here (the 590 branch drops these GPUs). Track upstream respins.
+    active_upstream: true         # unlike the frozen series, NVIDIA still releases
+    architectures: [amd64]        # no 32-bit anything since the 470 branch
+    lib_architectures: [amd64]
+    xorg_abi_max: 25
+    kernel_max: "6.16"
+    variants: [proprietary, open] # 580xx also has an open-kernel-module flavour
+    runs:
+      amd64:
+        run: "NVIDIA-Linux-x86_64-580.95.05.run"
+        url_kind: default
+        sha256: "UNVERIFIED"
+    provides_egl: true
+    provides_vulkan: true
+    provides_nvenc: true
+
   "470xx":
     version: "470.256.02"
     status: supported            # supported | best-effort | experimental
     gpu_families: "Kepler (GeForce 600/700 series)"
-    eol_note: "Upstream legacy branch, security fixes only until ~2026-09."
+    eol_note: "Upstream EOL 2024-Q3. Community-patched for newer kernels (see joanbm)."
     architectures: [amd64]        # no i386 kernel module upstream
     lib_architectures: [amd64, i386]
     xorg_abi_max: 25
-    kernel_max: "6.12"
+    kernel_max: "6.15"            # joanbm/nvidia-470xx-linux-mainline tracks head
     runs:
       amd64:
         run: "NVIDIA-Linux-x86_64-470.256.02.run"

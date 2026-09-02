@@ -11,30 +11,31 @@ series = "390xx"
 upstream_version = "390.157"
 
 # ---------------------------------------------------------------------------
-# Sources we import from (kept in sync by import-patches.sh):
+# Sources — reference ../SOURCES.toml by id; override/pin here as needed.
+[[source]]
+id = "aur-390"
+git = "https://aur.archlinux.org/nvidia-390xx-dkms.git"
+also = "https://aur.archlinux.org/nvidia-390xx-utils.git"
+license = "per-file; mostly public-domain / GPL-2 kernel build fixes"
+patches_of_interest = [
+  "kernel-6.12.patch", "kernel-6.13.patch", "kernel-6.14.patch",
+  "kernel-6.15.patch", "kernel-6.17.patch", "gcc-14.patch", "gcc-15.patch",
+]
+
 [[source]]
 id = "debian"
-name = "Debian nvidia-team"
 git = "https://salsa.debian.org/nvidia-team/nvidia-graphics-drivers-legacy-390xx.git"
 path = "debian/patches"
-license = "see debian/copyright in that repo (mostly Expat / public-domain build fixes)"
+license = "see debian/copyright (mostly Expat / public-domain build fixes)"
 
 [[source]]
 id = "butterfly"
-name = "Ubuntu butterfly PPA (kelebek333)"
 git = "https://github.com/kelebek333/nvidia-legacy"
 ppa = "ppa:kelebek333/nvidia-legacy"
 license = "GPL-2 build fixes / Expat"
 
 [[source]]
-id = "arch"
-name = "Arch Linux nvidia-390xx (AUR)"
-git = "https://aur.archlinux.org/nvidia-390xx.git"
-license = "per-file; mostly public-domain kernel build fixes"
-
-[[source]]
 id = "meowice"
-name = "MeowIce/nvidia-legacy"
 git = "https://github.com/MeowIce/nvidia-legacy"
 branch = "390.157"
 license = "MIT (repo LICENSE)"
@@ -43,16 +44,16 @@ license = "MIT (repo LICENSE)"
 # Imported patches (populated by import-patches.sh; example entries shown):
 
 # [[patch]]
-# file = "kernel/0001-kernel-6.8-mm-remove-vmf-flags.patch.kmax-6.8"
-# from = "meowice"
+# file = "kernel/0050-kernel-6.12.patch.kmax-6.12"
+# from = "aur-390"
 # origin_commit = "<sha>"
-# origin_path = "390.157/kernel-6.8/0001-...patch"
-# fixes = "build against Linux 6.8 (vm_fault_t flags, get_user_pages signature)"
-# license = "MIT"
+# origin_path = "kernel-6.12.patch"
+# fixes = "build against Linux 6.12 (fault API, tsc, folio changes)"
+# license = "GPL-2"
 
 # [[patch]]
-# file = "xorg/0100-xorg-abi-25-ignoreabi-note.patch.abimin-25"
-# from = "debian"
+# file = "build/0010-gcc-15.patch"
+# from = "aur-390"
 # origin_commit = "<sha>"
-# fixes = "tolerate Xorg video ABI 25; pairs with Option IgnoreABI in kernel-support"
-# license = "Expat"
+# fixes = "gcc 15 -Werror=implicit-int / incompatible-pointer-types in conftest"
+# license = "public-domain"
