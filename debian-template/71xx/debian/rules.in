@@ -10,7 +10,7 @@ SERIES      := @SERIES@
 VERSION     := @VERSION@
 FLAVOUR     := @FLAVOUR@
 DKMS_NAME   := nvidia-legacy-$(SERIES)
-DKMS_SRC    := debian/nvidia-legacy-$(SERIES)-kernel-dkms/usr/src/$(DKMS_NAME)-$(VERSION)
+DKMS_SRC    := debian/tmp/usr/src/$(DKMS_NAME)-$(VERSION)
 # payload/ is the extracted .run, delivered via the .orig tarball(s)
 PAYLOAD     := $(CURDIR)
 PAYLOAD32   := $(CURDIR)/i386-payload
