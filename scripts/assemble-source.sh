@@ -52,7 +52,7 @@ pack() {
   log "packing $(basename "$tarball")"
   tar --sort=name --owner=0 --group=0 --numeric-owner \
       --mtime="@${SDE}" --format=gnu \
-      -C "$work" -cf - "$top" | xz -9e -T0 > "$tarball"
+      -C "$work" -cf - "$top" | xz "${NVL_XZ_LEVEL:--6}" -T0 > "$tarball"
   ( cd "$outdir" && sha256sum "$(basename "$tarball")" )
   rm -rf "$work/$top"
 }
