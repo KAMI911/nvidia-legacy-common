@@ -41,12 +41,8 @@ Depends:
 %if dkms
  nvidia-legacy-@SERIES@-kernel-dkms (= ${binary:Version}),
 %endif
-Recommends:
-%if vdpau
- nvidia-legacy-@SERIES@-vdpau-driver,
-%endif
 %if legacy_xserver
- xorg-server-legacy-nvidia-@X_LEGACY_ABI@,
+Recommends: xorg-server-legacy-nvidia-@X_LEGACY_ABI@
 %endif
 Provides: nvidia-legacy-driver
 Conflicts: nvidia-driver, nvidia-legacy-driver
@@ -91,16 +87,6 @@ Description: NVIDIA legacy @VERSION@ driver — Xorg driver
  Officially targets X server video driver ABI <= @XORG_ABI_MAX@.
 %endif
 
-%if vdpau
-Package: nvidia-legacy-@SERIES@-vdpau-driver
-Architecture: @LIB_ARCHS@
-Multi-Arch: same
-Section: non-free/libs
-Depends: ${misc:Depends}, ${shlibs:Depends}
-Provides: vdpau-driver
-Description: NVIDIA legacy @VERSION@ driver — VDPAU backend
- libvdpau_nvidia.so, the VDPAU hardware video acceleration backend.
-%endif
 
 Package: nvidia-legacy-@SERIES@-driver-libs
 Architecture: @LIB_ARCHS@
@@ -111,6 +97,9 @@ Provides:
  nvidia-legacy-@SERIES@-driver-libs-nonglvnd,
  libgl1-nvidia-glx,
  libgl1-nvidia-legacy-@SERIES@-glx,
+%if vdpau
+ vdpau-driver,
+%endif
  libglx-nvidia,
 Description: NVIDIA legacy @VERSION@ driver — runtime libraries
  Every shared library from the NVIDIA @VERSION@ userspace: libGL / libGLX_nvidia

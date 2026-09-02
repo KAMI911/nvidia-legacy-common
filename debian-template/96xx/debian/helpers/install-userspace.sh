@@ -31,7 +31,7 @@ for so in "$PAYLOAD"/*.so."$VER"; do
   [ -e "$so" ] || continue
   b="$(basename "$so")"
   case "$b" in
-    tls_test_dso.so|*_test_*.so) continue ;;                       # test artefacts
+    tls_test_dso.so|*_test_*.so|libvdpau.so.*|libvdpau_trace.so.*) continue ;;                       # test artefacts
     nvidia_drv.so) install -m0644 "$so" "$DEST/usr/lib/xorg/modules/drivers/$b"; continue ;;
     libglxserver_nvidia.so.*|libglx.so.*)
       install -m0644 "$so" "$DEST/usr/lib/xorg/modules/extensions/$b"; continue ;;
