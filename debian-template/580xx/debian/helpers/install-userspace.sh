@@ -27,11 +27,11 @@ soname() {   # echo the DT_SONAME of $1, or empty
 # --- shared objects: every versioned .so the payload ships ------------------
 # NB: a runtime driver package ships libfoo.so.VER and the SONAME link
 # libfoo.so.N — but NOT the bare libfoo.so (that is a -dev symlink).
-for so in "$PAYLOAD"/*.so."$VER"; do
+for so in "$PAYLOAD"/*.so."$VER" "$PAYLOAD"/*.so.[0-9]*; do
   [ -e "$so" ] || continue
   b="$(basename "$so")"
   case "$b" in
-    tls_test_dso.so|*_test_*.so|libvdpau.so.*|libvdpau_trace.so.*) continue ;;                       # test artefacts
+    tls_test_dso.so|*_test_*.so|libvdpau.so.*|libvdpau_trace.so.*|libnvidia-pkcs11.so.*|libGLdispatch.so.*|libOpenGL.so.*) continue ;;                       # test artefacts
     nvidia_drv.so) install -m0644 "$so" "$DEST/usr/lib/xorg/modules/drivers/$b"; continue ;;
     libglxserver_nvidia.so.*|libglx.so.*)
       install -m0644 "$so" "$DEST/usr/lib/xorg/modules/extensions/$b"; continue ;;

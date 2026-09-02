@@ -24,7 +24,8 @@ if [ "${1:-}" = "--check" ]; then
     [ -n "$f" ] || continue
     rel="${f#"$pd"/}"
     grep -qxF "$rel" <<<"$documented" || { warn "undocumented patch: $rel"; rc=1; }
-  done < <(find "$pd" \( -name '*.patch' -o -name '*.patch.*' \) -not -path '*/_incoming/*' | sort)
+  done < <(find "$pd" \( -name '*.patch' -o -name '*.patch.*' \) \
+             -not -path '*/_incoming/*' -not -path '*/_needs-build-test/*' | sort)
   while IFS= read -r rel; do
     [ -n "$rel" ] || continue
     [ -e "$pd/$rel" ] || { warn "PROVENANCE lists missing file: $rel"; rc=1; }

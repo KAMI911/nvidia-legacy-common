@@ -158,32 +158,44 @@ def render_tree(src: pathlib.Path, dst: pathlib.Path, cfg: dict) -> None:
 
 
 def write_patch_series(series: str, cfg: dict, dst: pathlib.Path) -> None:
+    """Copy the gated kernel/build patches into debian/patches/{kernel,build}/.
+
+    These are applied by debian/rules to the DKMS *module* tree ($(DKMS_SRC)),
+    NOT to the top-level source — so debian/patches/series stays EMPTY and
+    dpkg-source never touches them. Only genuine source-level quilt patches
+    (patches/<series>/source/) go into series.
+    """
     pdir = ROOT / "patches" / series
+    (dst / "patches").mkdir(parents=True, exist_ok=True)
+    (dst / "patches" / "series").write_text("")           # quilt: none at source level
     if not pdir.is_dir():
         return
-    kmax = tuple(int(x) for x in cfg["KERNEL_MAX"].split("."))
-    lines: list[str] = []
+    kmax = tuple(int(x) for x in cfg["KERNEL_MAX"].split(".")[:2] + ["0"])[:2]
     for bucket in ("build", "kernel", "xorg"):
         bdir = pdir / bucket
         if not bdir.is_dir():
             continue
-        for patch in sorted(bdir.glob("*.patch")):
-            # gate by filename convention: NNNN-desc[.kmax-6.12][.abi-25].patch
+        for patch in sorted(list(bdir.glob("*.patch")) + list(bdir.glob("*.patch.*"))):
+            # .kmax-X.Y names the kernel whose API break this patch fixes.
+            # A DKMS source must carry EVERY shim up to our kernel_max
+            # (they are #if LINUX_VERSION_CODE guarded), so include the patch
+            # when X.Y <= kernel_max; skip only patches for kernels beyond it.
             mk = re.search(r"\.kmax-(\d+)\.(\d+)", patch.name)
             ma = re.search(r"\.abimin-(\d+)", patch.name)
-            if mk and (int(mk.group(1)), int(mk.group(2))) < kmax:
+            if mk and (int(mk.group(1)), int(mk.group(2))) > kmax:
                 continue
             if ma and int(ma.group(1)) > int(cfg["TARGET_XSERVER_ABI"]):
                 continue
-            lines.append(f"{bucket}/{patch.name}")
-    (dst / "patches").mkdir(parents=True, exist_ok=True)
-    for rel in lines:
-        srcp = pdir / rel
-        outp = dst / "patches" / rel
-        outp.parent.mkdir(parents=True, exist_ok=True)
-        outp.write_bytes(srcp.read_bytes())
-    (dst / "patches" / "series").write_text(
-        "".join(f"{l}\n" for l in lines) if lines else "")
+            outp = dst / "patches" / bucket / patch.name
+            outp.parent.mkdir(parents=True, exist_ok=True)
+            outp.write_bytes(patch.read_bytes())
+    # genuine source-level quilt patches, if any
+    sdir = pdir / "source"
+    if sdir.is_dir():
+        names = sorted(p.name for p in sdir.glob("*.patch"))
+        for n in names:
+            (dst / "patches" / n).write_bytes((sdir / n).read_bytes())
+        (dst / "patches" / "series").write_text("".join(f"{n}\n" for n in names))
 
 
 def prepend_changelog(dst: pathlib.Path, cfg: dict) -> None:
