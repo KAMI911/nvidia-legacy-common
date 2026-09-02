@@ -53,10 +53,27 @@ for so in "$PAYLOAD_LIBS"/*.so."$VER" "$PAYLOAD_LIBS"/*.so.[0-9]*; do
   [ -n "$sn" ] && [ "$sn" != "$b" ] && ln -sf "$b" "$LIBDIR/$sn" || true
 done
 
-[ "$LIBS_ONLY" = 1 ] && { echo "install-userspace.sh: i386 libs-only ($(find "$LIBDIR" -name '*.so*'|wc -l))"; exit 0; }
+# --- ICD / vendor json + docs (arch-independent; installed for BOTH arches so
+#     Multi-Arch: same driver-libs has identical files) ---------------------
+[ -e "$PAYLOAD/10_nvidia.json" ] && install -D -m0644 "$PAYLOAD/10_nvidia.json" \
+  "$DEST/usr/share/glvnd/egl_vendor.d/10_nvidia.json" || true
+for j in nvidia_icd.json nvidia_icd.json.template nvidia_layers.json; do
+  [ -e "$PAYLOAD/$j" ] && install -D -m0644 "$PAYLOAD/$j" \
+    "$DEST/usr/share/vulkan/icd.d/${j%.template}" || true
+done
+for L in LICENSE NVIDIA_Changelog README.txt; do
+  [ -e "$PAYLOAD/$L" ] && install -D -m0644 "$PAYLOAD/$L" \
+    "$DEST/usr/share/doc/nvidia-legacy-driver-libs/$L" || true
+done
+# guarantee the doc dir is non-empty even if the payload lacks LICENSE
+[ -e "$DEST/usr/share/doc/nvidia-legacy-driver-libs/LICENSE" ] || \
+  printf 'NVIDIA %s userspace — see debian/copyright\n' "$VER" \
+    > "$DEST/usr/share/doc/nvidia-legacy-driver-libs/README.nvidia-legacy"
+
+[ "$LIBS_ONLY" = 1 ] && { echo "install-userspace.sh: i386 libs-only"; exit 0; }
 
 # --- Xorg driver + GLX extension (64-bit only) ------------------------------
-[ -e "$PAYLOAD/nvidia_drv.so" ] && install -m0644 "$PAYLOAD/nvidia_drv.so" \
+[ -e "$PAYLOAD/nvidia_drv.so" ] && install -D -m0644 "$PAYLOAD/nvidia_drv.so" \
   "$DEST/usr/lib/xorg/modules/drivers/nvidia_drv.so" || true
 for g in "$PAYLOAD"/libglx.so."$VER" "$PAYLOAD"/libglxserver_nvidia.so."$VER"; do
   [ -e "$g" ] && install -m0644 "$g" "$DEST/usr/lib/xorg/modules/extensions/$(basename "$g")" || true
@@ -67,21 +84,6 @@ for b in nvidia-smi nvidia-debugdump nvidia-cuda-mps-control nvidia-cuda-mps-ser
          nvidia-persistenced nvidia-modprobe nvidia-xconfig nvidia-settings \
          nvidia-sleep.sh nvidia-bug-report.sh; do
   [ -e "$PAYLOAD/$b" ] && install -m0755 "$PAYLOAD/$b" "$DEST/usr/bin/$b" || true
-done
-
-# --- ICD / vendor json manifests -----------------------------------------
-install -d "$DEST/usr/share/glvnd/egl_vendor.d"
-[ -e "$PAYLOAD/10_nvidia.json" ] && install -m0644 "$PAYLOAD/10_nvidia.json" \
-  "$DEST/usr/share/glvnd/egl_vendor.d/10_nvidia.json" || true
-for j in nvidia_icd.json nvidia_icd.json.template nvidia_layers.json; do
-  [ -e "$PAYLOAD/$j" ] && install -m0644 "$PAYLOAD/$j" \
-    "$DEST/usr/share/vulkan/icd.d/${j%.template}" || true
-done
-
-# --- licence / docs ------------------------------------------------------
-for L in LICENSE NVIDIA_Changelog README.txt; do
-  [ -e "$PAYLOAD/$L" ] && install -m0644 "$PAYLOAD/$L" \
-    "$DEST/usr/share/doc/nvidia-legacy-driver-libs/$L" || true
 done
 
 echo "install-userspace.sh: staged $(find "$LIBDIR" -name '*.so*' | wc -l) lib entries for $MA"
