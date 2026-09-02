@@ -6,5 +6,4 @@ usr/bin/nvidia-xconfig
 usr/bin/nvidia-settings
 usr/bin/nvidia-cuda-mps-control
 usr/bin/nvidia-cuda-mps-server
-usr/bin/nvidia-sleep.sh
 usr/bin/nvidia-bug-report.sh

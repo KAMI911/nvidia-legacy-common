@@ -1,6 +1,4 @@
-# catch-all: every remaining shared object + doc. Packages listed BEFORE this one
-# in debian/control (-glx, xserver-xorg-video-*, -vdpau, -driver-bin) have
-# already claimed their files, so this is "the rest".
+# catch-all — everything the -glx / -vdpau / -bin packages did not claim
+# (listed AFTER them in debian/control): libcuda, libnvcuvid, libnvidia-*, ...
 usr/lib/*/lib*.so.*
 usr/share/doc/nvidia-legacy-driver-libs/*
-usr/share/vulkan/icd.d/*
