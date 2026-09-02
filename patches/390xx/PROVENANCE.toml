@@ -1,59 +1,186 @@
-# Provenance for every patch under patches/390xx/.
-# One [[patch]] block per file. `import-patches.sh` verifies that every *.patch
-# on disk has a block here (and vice versa) — CI fails otherwise.
-#
-# Filename convention (gates, see apply-patches.sh / render-debian.py):
-#   NNNN-short-description[.kmax-<maj>.<min>][.abimin-<abi>].patch
-#     .kmax-6.12  : only include when the target kernel_max >= 6.12
-#     .abimin-25  : only include when the target xserver_abi <= 25 ... (min the driver needs)
-
+# Provenance for patches/390xx/ — megvadulthangya/nvidia-390xx-utils import.
+# a/kernel/ path prefix stripped so patches apply -p1 in the DKMS module tree.
 series = "390xx"
 upstream_version = "390.157"
 
-# ---------------------------------------------------------------------------
-# Sources — reference ../SOURCES.toml by id; override/pin here as needed.
 [[source]]
-id = "aur-390"
-git = "https://aur.archlinux.org/nvidia-390xx-dkms.git"
-also = "https://aur.archlinux.org/nvidia-390xx-utils.git"
-license = "per-file; mostly public-domain / GPL-2 kernel build fixes"
-patches_of_interest = [
-  "kernel-6.12.patch", "kernel-6.13.patch", "kernel-6.14.patch",
-  "kernel-6.15.patch", "kernel-6.17.patch", "gcc-14.patch", "gcc-15.patch",
-]
+id = "hangya-390"
+git = "https://github.com/megvadulthangya/nvidia-390xx-utils"
+branch = "master"
+license = "no explicit LICENSE — build-compat patches (conftest/#ifdef shims)"
 
-[[source]]
-id = "debian"
-git = "https://salsa.debian.org/nvidia-team/nvidia-graphics-drivers-legacy-390xx.git"
-path = "debian/patches"
-license = "see debian/copyright (mostly Expat / public-domain build fixes)"
+[[patch]]
+file = "kernel/0001-kernel-4.16+-memory-encryption.patch"
+from = "hangya-390"
+origin_path = "kernel-4.16+-memory-encryption.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-4.16+-memory-encryption"
+license = "build-fix / no explicit licence"
 
-[[source]]
-id = "butterfly"
-git = "https://github.com/kelebek333/nvidia-legacy"
-ppa = "ppa:kelebek333/nvidia-legacy"
-license = "GPL-2 build fixes / Expat"
+[[patch]]
+file = "kernel/0002-kernel-6.1-flag.patch.kmax-6.1"
+from = "hangya-390"
+origin_path = "kernel-6.1-flag.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.1-flag"
+license = "build-fix / no explicit licence"
 
-[[source]]
-id = "meowice"
-git = "https://github.com/MeowIce/nvidia-legacy"
-branch = "390.157"
-license = "MIT (repo LICENSE)"
+[[patch]]
+file = "kernel/0003-kernel-6.2.patch.kmax-6.2"
+from = "hangya-390"
+origin_path = "kernel-6.2.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.2"
+license = "build-fix / no explicit licence"
 
-# ---------------------------------------------------------------------------
-# Imported patches (populated by import-patches.sh; example entries shown):
+[[patch]]
+file = "kernel/0004-kernel-6.3.patch.kmax-6.3"
+from = "hangya-390"
+origin_path = "kernel-6.3.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.3"
+license = "build-fix / no explicit licence"
 
-# [[patch]]
-# file = "kernel/0050-kernel-6.12.patch.kmax-6.12"
-# from = "aur-390"
-# origin_commit = "<sha>"
-# origin_path = "kernel-6.12.patch"
-# fixes = "build against Linux 6.12 (fault API, tsc, folio changes)"
-# license = "GPL-2"
+[[patch]]
+file = "kernel/0005-kernel-6.4.patch.kmax-6.4"
+from = "hangya-390"
+origin_path = "kernel-6.4.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.4"
+license = "build-fix / no explicit licence"
 
-# [[patch]]
-# file = "build/0010-gcc-15.patch"
-# from = "aur-390"
-# origin_commit = "<sha>"
-# fixes = "gcc 15 -Werror=implicit-int / incompatible-pointer-types in conftest"
-# license = "public-domain"
+[[patch]]
+file = "kernel/0006-kernel-6.5.patch.kmax-6.5"
+from = "hangya-390"
+origin_path = "kernel-6.5.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.5"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0007-kernel-6.6.patch.kmax-6.6"
+from = "hangya-390"
+origin_path = "kernel-6.6.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.6"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0008-kernel-6.8.patch.kmax-6.8"
+from = "hangya-390"
+origin_path = "kernel-6.8.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.8"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0009-gcc-14.patch"
+from = "hangya-390"
+origin_path = "gcc-14.patch"
+origin_commit = "master@import-2026-09"
+fixes = "gcc-14"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0010-kernel-6.10.patch.kmax-6.10"
+from = "hangya-390"
+origin_path = "kernel-6.10.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.10"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0011-kernel-6.12.patch.kmax-6.12"
+from = "hangya-390"
+origin_path = "kernel-6.12.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.12"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0012-kernel-6.13.patch.kmax-6.13"
+from = "hangya-390"
+origin_path = "kernel-6.13.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.13"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0013-make-modesetting-default.patch"
+from = "hangya-390"
+origin_path = "make-modesetting-default.patch"
+origin_commit = "master@import-2026-09"
+fixes = "make-modesetting-default"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0014-kernel-6.14.patch.kmax-6.14"
+from = "hangya-390"
+origin_path = "kernel-6.14.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.14"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0015-gcc-15.patch"
+from = "hangya-390"
+origin_path = "gcc-15.patch"
+origin_commit = "master@import-2026-09"
+fixes = "gcc-15"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "_needs-build-test/0016-kernel-6.15.patch.kmax-6.15"
+from = "hangya-390"
+origin_path = "kernel-6.15.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.15"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0017-kernel-6.17.patch.kmax-6.17"
+from = "hangya-390"
+origin_path = "kernel-6.17.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.17"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0018-kernel-6.18-nv_workqueue_flush.patch.kmax-6.18"
+from = "hangya-390"
+origin_path = "kernel-6.18-nv_workqueue_flush.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.18-nv_workqueue_flush"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0019-kernel-6.19.patch.kmax-6.19"
+from = "hangya-390"
+origin_path = "kernel-6.19.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-6.19"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0020-kernel-7.0.patch.kmax-7.0"
+from = "hangya-390"
+origin_path = "kernel-7.0.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-7.0"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0021-kernel-7.2.patch.kmax-7.2"
+from = "hangya-390"
+origin_path = "kernel-7.2.patch"
+origin_commit = "master@import-2026-09"
+fixes = "kernel-7.2"
+license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "_needs-build-test/0022-CFLAGS-Set-std-gnu17-for-all-compilation-flags.patch"
+from = "hangya-390"
+origin_path = "CFLAGS-Set-std-gnu17-for-all-compilation-flags.patch"
+origin_commit = "master@import-2026-09"
+fixes = "CFLAGS-Set-std-gnu17-for-all-compilation-flags"
+license = "build-fix / no explicit licence"

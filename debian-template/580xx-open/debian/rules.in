@@ -38,9 +38,8 @@ override_dh_auto_install:
 	SRCD=@MODULE_SOURCE@; test -d "$(PAYLOAD)/$$SRCD" || SRCD=$$(test -d "$(PAYLOAD)/kernel" && echo kernel || echo usr/src/nv); cp -a "$(PAYLOAD)/$$SRCD/." $(DKMS_SRC)/
 	# apply the gated kernel/build patches into the module tree
 	set -e; cd $(DKMS_SRC); \
-	  for p in $(sort $(wildcard $(CURDIR)/debian/patches/kernel/*.patch*) \
-	                  $(wildcard $(CURDIR)/debian/patches/build/*.patch*)); do \
-	    echo "  dkms-patch $$p"; patch -p1 --no-backup-if-mismatch < "$$p"; \
+	  for p in `ls -1 $(CURDIR)/debian/patches/kernel/*.patch* 2>/dev/null | sort -V`; do \
+	    echo "  dkms-patch $$p"; patch -p1 --forward --no-backup-if-mismatch -F3 -r /dev/null < "$$p" || test $$? -le 1; \
 	  done
 %endif
 %if modules
