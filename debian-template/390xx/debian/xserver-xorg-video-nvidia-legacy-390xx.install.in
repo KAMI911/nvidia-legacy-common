@@ -1,1 +1,2 @@
 usr/lib/xorg/modules/drivers/nvidia_drv.so
+usr/lib/xorg/modules/extensions/*
