@@ -4,10 +4,18 @@
 # UI is behind Anubis — `git clone https://aur.archlinux.org/<pkg>.git` is fine).
 #
 # Priority order when the same fix exists in several places:
-#   1. dedicated mainline-patch repo (joanbm/*)      — cleanest, per-kernel, tested
-#   2. Debian nvidia-team                            — policy-clean, well reviewed
-#   3. AUR nvidia-<series>xx-dkms                     — fast-moving, covers newest kernels
-#   4. butterfly PPA / MeowIce / Frogging-Family     — distro-specific / bundled
+#   1. megvadulthangya/* + joanbm/*   — widest kernel range (to Linux 7.x), actively
+#                                        maintained; primary source for 340/390/470xx
+#   2. AUR nvidia-<series>xx-dkms      — fast-moving, covers newest kernels + gcc
+#   3. Debian nvidia-team             — policy-clean, well reviewed
+#   4. butterfly PPA / MeowIce / Frogging-Family  — distro-specific / bundled
+#
+# LICENSE NOTE: megvadulthangya/* and several AUR patch files carry no explicit
+# licence. They are derivative build-compat patches (conftest tweaks, API-shim
+# #ifdefs) — generally below the threshold of originality, but PROVENANCE.toml
+# must still record origin repo + commit + "no explicit licence; trivial build
+# fix" and we should ask the author to add an SPDX header. Do NOT import anything
+# that looks substantive without a clear licence.
 
 [[source]]
 id = "debian"
@@ -56,7 +64,50 @@ note = "ACTIVE branch (580.95.05 .. 580.178.04+); proprietary + open variants"
 id = "joanbm-470"
 scope = "470xx"
 git = "https://github.com/joanbm/nvidia-470xx-linux-mainline"
-note = "PRIMARY 470xx source. Per-kernel patches to head; roughly tracks AUR but ahead. MIT-ish, per-file headers."
+note = "Per-kernel patches to head; roughly tracks AUR but ahead. MIT-ish, per-file headers."
+
+# --- megvadulthangya: Manjaro-flavoured, widest kernel coverage (to 7.2/7.3) ---
+[[source]]
+id = "hangya-390"
+scope = "390xx"
+git = "https://github.com/megvadulthangya/nvidia-390xx-utils"
+branch = "master"
+note = """PRIMARY 390xx. Arch PKGBUILD layout. 24 patches: kernel-6.1..6.6, 6.8, 6.10,
+6.12..6.15, 6.17, 6.18 (nv_workqueue_flush), 6.19, 7.0, 7.2, plus gcc-14/15,
+CFLAGS std=gnu17, kernel-4.16+ memory-encryption, make-modesetting-default.
+prepare() in the PKGBUILD gives the exact apply order. No LICENSE file."""
+
+[[source]]
+id = "hangya-390-settings"
+scope = "390xx"
+git = "https://github.com/megvadulthangya/nvidia-390xx-settings"
+branch = "master"
+note = "nvidia-settings build patches: remove-gtk2, libXNVCtrl .so, VDPAUDeviceFunctions static. For the -driver-bin / settings packaging."
+
+[[source]]
+id = "hangya-340"
+scope = "340xx"
+git = "https://github.com/megvadulthangya/nvidia-340xx-utils"
+branch = "master"
+note = "340xx userspace packaging (config files, sysusers, outputclass). Pairs with hangya-340-modules for the kernel side."
+
+[[source]]
+id = "hangya-340-modules"
+scope = "340xx"
+git = "https://github.com/megvadulthangya/nvidia-340xx"
+branch = "main"
+note = """340xx KERNEL side, prebuilt-per-kernel model (mirrors our modules repo!):
+normal-kernels/linux{61,66,612,618,71,72}-nvidia-340xx/PKGBUILD + rt-kernels/*.
+Each PKGBUILD's prepare() lists the kernel patch set for that ABI — use these to
+seed patches/340xx/kernel/ with .kmax gates and to pick feasible ABIs for
+nvidia-legacy-modules tools/kernels.yaml."""
+
+[[source]]
+id = "hangya-lib32-340"
+scope = "340xx"
+git = "https://github.com/megvadulthangya/lib32-nvidia-340xx-utils"
+branch = "master"
+note = "32-bit userspace lib layout for 340xx — reference for our :i386 multiarch driver-libs."
 
 [[source]]
 id = "meowice"

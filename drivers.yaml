@@ -57,12 +57,14 @@ series:
     architectures: [amd64]        # no i386 kernel module upstream
     lib_architectures: [amd64, i386]
     xorg_abi_max: 25
-    kernel_max: "6.15"            # joanbm/nvidia-470xx-linux-mainline tracks head
+    kernel_max: "7.3"            # AUR nvidia-470xx-utils patches to 7.3; joanbm/nvidia-470xx-linux-mainline tracks head
     runs:
       amd64:
         run: "NVIDIA-Linux-x86_64-470.256.02.run"
         url_kind: default
-        sha256: "UNVERIFIED"
+        sha256: "d6451862deb695bb0447f3b7cd6268f73e81168c10e2c10597ff3fa01349b1de"
+        sha512: "a837946dd24d7945c1962a695f1f31965f3ceb6927f52cd08fd51b8db138b7a888bbeab69243f5c8468a7bd7ccd47f5dbdb48a1ca81264866c1ebb7d88628f88"
+        cross_verified: "AUR nvidia-470xx-utils sha512sums"
     provides_egl: true
     provides_vulkan: true
     provides_nvenc: true
@@ -75,16 +77,19 @@ series:
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
     xorg_abi_max: 25
-    kernel_max: "6.12"
+    kernel_max: "7.2"
     runs:
       amd64:
         run: "NVIDIA-Linux-x86_64-390.157.run"
         url_kind: default
-        sha256: "UNVERIFIED"
+        sha256: "5bebbca6e8fed5d6b9d81070fb9e351f18edc534952553cbdc71e8fd0b9b328a"
+        sha512: "4780503a4cff0180b1b1f37d20a6ba3438dd78b51fa7f69b98d35521835e5d61099129746929d51d63afa2d47b672b3e145e1e1897584dc3799e7f822c5b3a0a"
+        cross_verified: "AUR nvidia-390xx-utils b2sums"
       i386:
         run: "NVIDIA-Linux-x86-390.157.run"
         url_kind: default
-        sha256: "UNVERIFIED"
+        sha256: "55d65e0a4539a9cb796200c5f1082fe263fb0951deaaf96a9cffeb8a80f70799"
+        sha512: "dae9ac2c12f9ad90f7441e00e01a984147c577892421911d7f67f6a31e616ac1cb7d434bc9c7f58fbd9b8ae909521b5bece607a63c79588c0bb9d99c6bad5fb0"
     provides_egl: true
     provides_vulkan: true
     provides_nvenc: false
@@ -97,16 +102,18 @@ series:
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
     xorg_abi_max: 24
-    kernel_max: "6.12"
+    kernel_max: "7.2"
     runs:
       amd64:
         run: "NVIDIA-Linux-x86_64-340.108.run"
         url_kind: default
-        sha256: "UNVERIFIED"
+        sha256: "c671d4f1b7c09bc1af079b98b447adb06d704b04f802f7045a611fa50133b71b"
+        sha512: "7941b5496b2c17b06320d676a51ec2866c08a3d3dce9d7cf20464bc35ccb4616c398eb247d1f1e5039386aa73bb610a36937252ce4ad47959437938db8cf3c29"
       i386:
         run: "NVIDIA-Linux-x86-340.108.run"
         url_kind: default
-        sha256: "UNVERIFIED"
+        sha256: "2032aad612d9f3af1aecf979cfdfe423d79aa76929ef8bf8d3a403076f507cca"
+        sha512: "cf122c4cf724737cc647bc3d115e853bfe17027d5070c5ed68caf78e0dab718e7345bf824d0e8b33489bf299957dab8ff249cb0f837c3d17b2bb60887afe2818"
     provides_egl: false
     provides_vulkan: false
     provides_nvenc: false
