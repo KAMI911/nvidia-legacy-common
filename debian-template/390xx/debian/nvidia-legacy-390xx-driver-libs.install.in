@@ -1,4 +1,5 @@
 # catch-all — everything the -glx / -vdpau / -bin packages did not claim
-# (listed AFTER them in debian/control): libcuda, libnvcuvid, libnvidia-*, ...
+# (this stanza is listed AFTER them in debian/control)
 usr/lib/*/lib*.so.*
+usr/share/vulkan/icd.d/*
 usr/share/doc/nvidia-legacy-driver-libs/*

@@ -24,23 +24,21 @@ soname() {   # echo the DT_SONAME of $1, or empty
   ${OBJDUMP:-objdump} -p "$1" 2>/dev/null | awk '/SONAME/{print $2; exit}'
 }
 
-# --- shared objects: everything the payload ships at top level ---------------
-for so in "$PAYLOAD"/*.so."$VER" "$PAYLOAD"/*.so.1 "$PAYLOAD"/*.so; do
+# --- shared objects: every versioned .so the payload ships ------------------
+# NB: a runtime driver package ships libfoo.so.VER and the SONAME link
+# libfoo.so.N — but NOT the bare libfoo.so (that is a -dev symlink).
+for so in "$PAYLOAD"/*.so."$VER"; do
   [ -e "$so" ] || continue
   b="$(basename "$so")"
   case "$b" in
-    nvidia_drv.so)        install -m0644 "$so" "$DEST/usr/lib/xorg/modules/drivers/$b"; continue ;;
-    libglxserver_nvidia.*|libglx.so.*) install -m0644 "$so" "$DEST/usr/lib/xorg/modules/extensions/$b"; continue ;;
+    tls_test_dso.so|*_test_*.so) continue ;;                       # test artefacts
+    nvidia_drv.so) install -m0644 "$so" "$DEST/usr/lib/xorg/modules/drivers/$b"; continue ;;
+    libglxserver_nvidia.so.*|libglx.so.*)
+      install -m0644 "$so" "$DEST/usr/lib/xorg/modules/extensions/$b"; continue ;;
   esac
   install -m0644 "$so" "$LIBDIR/$b"
-  # SONAME link
   sn="$(soname "$so" || true)"
-  if [ -n "$sn" ] && [ "$sn" != "$b" ]; then
-    ln -sf "$b" "$LIBDIR/$sn"
-  fi
-  # bare dev link libFoo.so -> libFoo.so.SONAME (only for libs that carry one)
-  stem="${b%%.so.*}"
-  [ -n "$sn" ] && ln -sf "$sn" "$LIBDIR/${stem}.so" 2>/dev/null || true
+  [ -n "$sn" ] && [ "$sn" != "$b" ] && ln -sf "$b" "$LIBDIR/$sn" || true
 done
 
 # --- Xorg driver + GLX extension (also matched above, be explicit) -----------
@@ -57,9 +55,13 @@ for b in nvidia-smi nvidia-debugdump nvidia-cuda-mps-control nvidia-cuda-mps-ser
   [ -e "$PAYLOAD/$b" ] && install -m0755 "$PAYLOAD/$b" "$DEST/usr/bin/$b" || true
 done
 
-# --- ICD / json manifests --------------------------------------------------
-for j in "$PAYLOAD"/nvidia_icd.json* "$PAYLOAD"/nvidia_layers.json "$PAYLOAD"/10_nvidia.json; do
-  [ -e "$j" ] && install -m0644 "$j" "$DEST/usr/share/vulkan/icd.d/$(basename "$j" .template)" || true
+# --- ICD / vendor json manifests -----------------------------------------
+install -d "$DEST/usr/share/glvnd/egl_vendor.d"
+[ -e "$PAYLOAD/10_nvidia.json" ] && install -m0644 "$PAYLOAD/10_nvidia.json" \
+  "$DEST/usr/share/glvnd/egl_vendor.d/10_nvidia.json" || true
+for j in nvidia_icd.json nvidia_icd.json.template nvidia_layers.json; do
+  [ -e "$PAYLOAD/$j" ] && install -m0644 "$PAYLOAD/$j" \
+    "$DEST/usr/share/vulkan/icd.d/${j%.template}" || true
 done
 
 # --- licence / docs ------------------------------------------------------
