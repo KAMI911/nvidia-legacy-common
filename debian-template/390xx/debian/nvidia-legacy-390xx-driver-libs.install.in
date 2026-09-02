@@ -6,7 +6,5 @@ usr/lib/*/libnvidia-ml.so.*
 usr/lib/*/libnvidia-cfg.so.*
 usr/lib/*/libnvidia-fatbinaryloader.so.*
 usr/lib/*/libnvidia-opencl.so.*
-%if nvenc
 usr/lib/*/libnvidia-encode.so.*
-%endif
 usr/share/doc/nvidia-legacy-@SERIES@-driver-libs/LICENSE
