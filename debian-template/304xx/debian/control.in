@@ -6,10 +6,22 @@ Build-Depends:
  debhelper-compat (= 13),
  dh-dkms,
  dpkg-dev (>= 1.20.0),
+ binutils,
 %if modules
  linux-headers-generic | linux-headers-amd64 | linux-headers-686-pae,
 %endif
  xz-utils,
+# runtime libs the prebuilt NVIDIA .so files link against, so dpkg-shlibdeps
+# can resolve their SONAMEs at build time
+ libc6-dev,
+ libx11-6, libxext6, libxv1, libxrandr2, libxrender1, libxfixes3, libxi6,
+ libgl1, libglx0, libglvnd0,
+ libwayland-client0, libwayland-server0,
+ libpciaccess0,
+# nvidia-settings' bundled GTK backends (libnvidia-gtk2/3)
+ libgtk2.0-0t64 | libgtk2.0-0,
+ libgtk-3-0t64 | libgtk-3-0,
+ libgdk-pixbuf-2.0-0,
 Rules-Requires-Root: no
 Standards-Version: 4.6.2
 Homepage: https://github.com/kami911/nvidia-legacy
@@ -29,11 +41,10 @@ Depends:
 %if dkms
  nvidia-legacy-@SERIES@-kernel-dkms (= ${binary:Version}),
 %endif
-%if modules
- nvidia-legacy-@SERIES@-kernel-${kernel:Flavour} | nvidia-legacy-@SERIES@-kernel-dkms,
-%endif
 Recommends:
- libgl1-nvidia-legacy-@SERIES@-glx,
+%if vdpau
+ nvidia-legacy-@SERIES@-vdpau-driver,
+%endif
 %if legacy_xserver
  xorg-server-legacy-nvidia-@X_LEGACY_ABI@,
 %endif
@@ -52,48 +63,27 @@ Description: NVIDIA legacy @VERSION@ driver metapackage (@GPU_FAMILIES@)
  SECURITY WARNING: this driver series receives NO security updates from NVIDIA
  and has publicly known, unpatched vulnerabilities. Install it only on isolated
  or offline systems, or where the hardware leaves no supported alternative.
- debconf shows this warning again at install time.
 %endif
 %if best_effort
  .
  This package is BEST-EFFORT for @TARGET@: the shipped X server ABI
  (@TARGET_XSERVER_ABI@) is newer than what this driver officially supports
- (@XORG_ABI_MAX@). IgnoreABI is enabled automatically. Test before relying on it.
+ (@XORG_ABI_MAX@). IgnoreABI is enabled automatically.
 %endif
-
-Package: nvidia-legacy-@SERIES@-driver-libs
-Architecture: @LIB_ARCHS@
-Multi-Arch: same
-Depends: ${misc:Depends}, ${shlibs:Depends}
-Provides: nvidia-legacy-@SERIES@-driver-libs-nonglvnd
-Description: NVIDIA legacy @VERSION@ driver — core runtime libraries
- Shared libraries used by the NVIDIA @VERSION@ driver: libnvidia-glcore,
- libnvidia-tls, libnvidia-eglcore and friends. Install the :i386 variant
- alongside for 32-bit OpenGL applications.
 
 Package: nvidia-legacy-@SERIES@-driver-bin
 Architecture: @KERNEL_ARCHS@
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: NVIDIA legacy @VERSION@ driver — utilities
- nvidia-smi, nvidia-settings' backend, nvidia-xconfig, nvidia-debugdump and
- the nvidia-persistenced daemon for the @VERSION@ driver.
-
-Package: libgl1-nvidia-legacy-@SERIES@-glx
-Architecture: @LIB_ARCHS@
-Multi-Arch: same
-Section: non-free/libs
-Depends: ${misc:Depends}, ${shlibs:Depends}, nvidia-legacy-@SERIES@-driver-libs (= ${binary:Version})
-Provides: libgl1-nvidia-glx
-Description: NVIDIA legacy @VERSION@ driver — libGL / GLX
- The NVIDIA implementation of libGL and the GLX extension for the @VERSION@
- driver, wired through glvnd where the distro provides it.
+ nvidia-smi, nvidia-settings, nvidia-xconfig, nvidia-debugdump,
+ nvidia-persistenced and the GTK backends for the @VERSION@ driver.
 
 %if has_x_driver
 Package: xserver-xorg-video-nvidia-legacy-@SERIES@
 Architecture: @KERNEL_ARCHS@
 Depends:
  ${misc:Depends}, ${shlibs:Depends},
- libgl1-nvidia-legacy-@SERIES@-glx (= ${binary:Version}),
+ nvidia-legacy-@SERIES@-driver-libs (= ${binary:Version}),
  nvidia-legacy-@SERIES@-kernel-support (= ${binary:Version}),
 Provides: xorg-driver-video
 Description: NVIDIA legacy @VERSION@ driver — Xorg driver
@@ -101,6 +91,7 @@ Description: NVIDIA legacy @VERSION@ driver — Xorg driver
  Officially targets X server video driver ABI <= @XORG_ABI_MAX@.
 %endif
 
+%if vdpau
 Package: nvidia-legacy-@SERIES@-vdpau-driver
 Architecture: @LIB_ARCHS@
 Multi-Arch: same
@@ -109,11 +100,27 @@ Depends: ${misc:Depends}, ${shlibs:Depends}
 Provides: vdpau-driver
 Description: NVIDIA legacy @VERSION@ driver — VDPAU backend
  libvdpau_nvidia.so, the VDPAU hardware video acceleration backend.
+%endif
+
+Package: nvidia-legacy-@SERIES@-driver-libs
+Architecture: @LIB_ARCHS@
+Multi-Arch: same
+Section: non-free/libs
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Provides:
+ nvidia-legacy-@SERIES@-driver-libs-nonglvnd,
+ libgl1-nvidia-glx,
+ libgl1-nvidia-legacy-@SERIES@-glx,
+ libglx-nvidia,
+Description: NVIDIA legacy @VERSION@ driver — runtime libraries
+ Every shared library from the NVIDIA @VERSION@ userspace: libGL / libGLX_nvidia
+ / libEGL_nvidia, libnvidia-glcore, libnvidia-tls, libnvidia-eglcore,
+ libnvidia-ml, libcuda and friends, plus the GLX X extension module. Install the
+ :i386 variant alongside for 32-bit applications.
 
 Package: nvidia-legacy-@SERIES@-kernel-support
 Architecture: @KERNEL_ARCHS@
 Depends: ${misc:Depends}
-Provides: nvidia-legacy-@SERIES@-kernel-support-nonglvnd
 Description: NVIDIA legacy @VERSION@ driver — kernel/X integration glue
  Ships the nouveau blacklist, the modprobe alias, the initramfs hook, the udev
  rules and the /etc/X11/xorg.conf.d snippet for the @VERSION@ driver.
@@ -131,6 +138,5 @@ Provides: nvidia-legacy-@SERIES@-kernel-MODULE
 Description: NVIDIA legacy @VERSION@ driver — DKMS kernel module source
  DKMS source for the nvidia, nvidia-modeset, nvidia-drm and nvidia-uvm kernel
  modules from the @VERSION@ release. Rebuilt automatically for every installed
- kernel (Debian, Ubuntu HWE, mainline PPA and Ubuntu kernel PPA).
- Community patches extend build support to Linux <= @KERNEL_MAX@.
+ kernel. Community patches extend build support to Linux <= @KERNEL_MAX@.
 %endif

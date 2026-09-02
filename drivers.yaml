@@ -49,6 +49,7 @@ series:
     provides_egl: true
     provides_vulkan: true
     provides_nvenc: true
+    provides_vdpau: true
 
   "580xx-open":
     version: "580.178.04"
@@ -75,6 +76,7 @@ series:
     provides_egl: true
     provides_vulkan: true
     provides_nvenc: true
+    provides_vdpau: true
 
   "470xx":
     version: "470.256.02"
@@ -95,6 +97,7 @@ series:
     provides_egl: true
     provides_vulkan: true
     provides_nvenc: true
+    provides_vdpau: true
 
   "390xx":
     version: "390.157"
@@ -120,6 +123,7 @@ series:
     provides_egl: true
     provides_vulkan: true
     provides_nvenc: false
+    provides_vdpau: true
 
   "340xx":
     version: "340.108"
@@ -145,6 +149,7 @@ series:
     provides_egl: false
     provides_vulkan: false
     provides_nvenc: false
+    provides_vdpau: true
 
   "304xx":
     version: "304.137"
@@ -173,6 +178,7 @@ series:
     provides_egl: false
     provides_vulkan: false
     provides_nvenc: false
+    provides_vdpau: true
 
   # ---------------------------------------------------------------------------
   # 173xx / 96xx / 71xx: EXPERIMENTAL forward-port track (user-requested "try all
@@ -200,6 +206,7 @@ series:
     provides_egl: false
     provides_vulkan: false
     provides_nvenc: false
+    provides_vdpau: false
 
   "96xx":
     version: "96.43.23"
@@ -220,6 +227,7 @@ series:
     provides_egl: false
     provides_vulkan: false
     provides_nvenc: false
+    provides_vdpau: false
 
   "71xx":
     version: "71.86.15"
@@ -240,6 +248,7 @@ series:
     provides_egl: false
     provides_vulkan: false
     provides_nvenc: false
+    provides_vdpau: false
 
 # Distro targets. `xserver_abi` is the video driver ABI shipped by that release;
 # compared against series.xorg_abi_max to decide IgnoreABI + best-effort status.

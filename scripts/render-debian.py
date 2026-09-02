@@ -96,6 +96,7 @@ def load_cfg(series: str, target: str) -> dict:
             "egl": s["provides_egl"],
             "vulkan": s["provides_vulkan"],
             "nvenc": s["provides_nvenc"],
+            "vdpau": s.get("provides_vdpau", True),
             "insecure": series in ("340xx", "304xx", "173xx", "96xx", "71xx"),
             "open_module": s.get("module_source") == "kernel-open",
         },

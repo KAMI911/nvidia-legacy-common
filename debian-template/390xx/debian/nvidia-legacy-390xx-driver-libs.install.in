@@ -1,5 +1,5 @@
-# catch-all — everything the -glx / -vdpau / -bin packages did not claim
-# (this stanza is listed AFTER them in debian/control)
 usr/lib/*/lib*.so.*
+usr/lib/xorg/modules/extensions/libglx.so.*
+usr/share/glvnd/egl_vendor.d/*
 usr/share/vulkan/icd.d/*
 usr/share/doc/nvidia-legacy-driver-libs/*
