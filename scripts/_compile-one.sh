@@ -15,8 +15,11 @@ blob="$CACHE_DIR/$run"
 command -v podman >/dev/null && OCI=podman || OCI=docker
 work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
 ( cd "$work" && sh "$blob" -x >/dev/null 2>&1 )
-src="$(find "$work" -maxdepth 1 -type d -name 'NVIDIA-*')/kernel"
-[ -d "$src" ] || { echo "FAIL (no kernel/ in payload)"; exit 0; }
+top="$(find "$work" -maxdepth 1 -type d -name 'NVIDIA-*' | head -1)"
+# modern layout: kernel/ ; legacy 173/96/71: usr/src/nv/
+if   [ -d "$top/kernel" ];      then src="$top/kernel"
+elif [ -d "$top/usr/src/nv" ];  then src="$top/usr/src/nv"
+else echo "FAIL (no kernel source dir in payload)"; exit 0; fi
 
 if [ "$patched" = 1 ]; then
   "$COMMON_ROOT/scripts/apply-patches.sh" "$series" debian13 "$src" --apply || true
@@ -44,7 +47,16 @@ else
   KSRC=/usr/src/l
 fi
 cd /src
-make -j\$(nproc) SYSSRC="\$KSRC" KERNEL_UNAME=\$(basename \$(dirname \$KSRC) 2>/dev/null || echo \$KV) modules 2>&1
+KU=\$(basename \$(dirname \$KSRC) 2>/dev/null || echo \$KV)
+# modern NVIDIA: 'modules' target in kernel/Makefile.
+# legacy 173/96/71: 'module' target via Makefile.kbuild.
+if [ -f Makefile ] && grep -q '^modules:' Makefile 2>/dev/null; then
+  make -j\$(nproc) SYSSRC="\$KSRC" KERNEL_UNAME=\$KU modules 2>&1
+elif [ -f Makefile.kbuild ]; then
+  make -j\$(nproc) -f Makefile.kbuild SYSSRC="\$KSRC" KERNELDIR="\$KSRC" module 2>&1
+else
+  make -j\$(nproc) SYSSRC="\$KSRC" KERNEL_UNAME=\$KU module 2>&1
+fi
 EOF
 
 log_output="$($OCI run --rm -v "$src":/src:ro -v "$work/build.sh":/build.sh:ro \

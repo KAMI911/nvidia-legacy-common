@@ -20,7 +20,12 @@
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 series="${1:?series}"; kv="${2:?kernel X.Y}"
-REF_SERIES="${FWDPORT_REF:-390xx}"
+# 173/96/71 share the flat pre-modular layout (nv-linux.h, os-interface.c) with
+# 304xx — reference that, not the modular 390xx/470xx.
+case "$series" in
+  173xx|96xx|71xx) REF_SERIES="${FWDPORT_REF:-304xx}" ;;
+  *)               REF_SERIES="${FWDPORT_REF:-390xx}" ;;
+esac
 
 pdir="$COMMON_ROOT/patches/$series/kernel"
 mkdir -p "$pdir"

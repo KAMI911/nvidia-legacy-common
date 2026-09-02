@@ -32,11 +32,11 @@ override_dh_auto_install:
 %if dkms
 	# --- DKMS module source tree -------------------------------------------
 	install -d $(DKMS_SRC)
-	cp -a "$(PAYLOAD)/kernel/." $(DKMS_SRC)/
+	SRCD=$$(test -d "$(PAYLOAD)/kernel" && echo kernel || echo usr/src/nv); cp -a "$(PAYLOAD)/$$SRCD/." $(DKMS_SRC)/
 	# apply the gated kernel/build patches into the module tree
 	set -e; cd $(DKMS_SRC); \
-	  for p in $(sort $(wildcard $(CURDIR)/debian/patches/kernel/*.patch) \
-	                  $(wildcard $(CURDIR)/debian/patches/build/*.patch)); do \
+	  for p in $(sort $(wildcard $(CURDIR)/debian/patches/kernel/*.patch*) \
+	                  $(wildcard $(CURDIR)/debian/patches/build/*.patch*)); do \
 	    echo "  dkms-patch $$p"; patch -p1 --no-backup-if-mismatch < "$$p"; \
 	  done
 	# debian/dkms.conf is already fully rendered (version from drivers.yaml)
