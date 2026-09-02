@@ -10,7 +10,7 @@ SERIES      := @SERIES@
 VERSION     := @VERSION@
 FLAVOUR     := @FLAVOUR@
 DKMS_NAME   := nvidia-legacy-$(SERIES)
-DKMS_SRC    := debian/tmp/usr/src/$(DKMS_NAME)-$(VERSION)
+DKMS_SRC    := debian/nvidia-legacy-$(SERIES)-kernel-dkms/usr/src/$(DKMS_NAME)-$(VERSION)
 # payload/ is the extracted .run, delivered via the .orig tarball(s)
 PAYLOAD     := $(CURDIR)
 PAYLOAD32   := $(CURDIR)/i386-payload
@@ -39,8 +39,6 @@ override_dh_auto_install:
 	                  $(wildcard $(CURDIR)/debian/patches/build/*.patch*)); do \
 	    echo "  dkms-patch $$p"; patch -p1 --no-backup-if-mismatch < "$$p"; \
 	  done
-	# debian/dkms.conf is already fully rendered (version from drivers.yaml)
-	install -m 0644 debian/dkms.conf $(DKMS_SRC)/dkms.conf
 %endif
 %if modules
 	# --- prebuilt module: compiled by dh_dkms against the build chroot kernel
