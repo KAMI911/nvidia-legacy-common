@@ -1,5 +1,7 @@
 usr/lib/*/lib*.so.*
-usr/lib/xorg/modules/extensions/libglx.so.*
+%if has_x_driver
+usr/lib/xorg/modules/extensions/*
+%endif
 %if egl
 usr/share/glvnd/egl_vendor.d/*
 %endif

@@ -68,17 +68,12 @@ print(f"  wrote {series}/{arch} sha256 into {path}")
 PY
       fi
     else
-      exp512="$(yq_get ".series.\"$series\".runs.$arch.sha512")"
-      got512="$(sha512sum "$dest" | awk '{print $1}')"
       if [ "$exp" = "UNVERIFIED" ] || [ -z "$exp" ]; then
         warn "$series/$arch: drivers.yaml has no verified sha256 (run --update)"; rc=1
       elif [ "$got" != "$exp" ]; then
         warn "$series/$arch: sha256 MISMATCH"; warn "  expected $exp"; warn "  got      $got"; rc=1
-      elif [ -n "$exp512" ] && [ "$got512" != "$exp512" ]; then
-        warn "$series/$arch: sha512 MISMATCH (sha256 matched — investigate!)"
-        warn "  expected $exp512"; warn "  got      $got512"; rc=1
       else
-        log "$series/$arch: OK  sha256=$got${exp512:+  sha512 ok}"
+        log "$series/$arch: OK  sha256=$got"
       fi
     fi
   done

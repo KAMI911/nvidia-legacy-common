@@ -71,7 +71,8 @@ def load_cfg(series: str, target: str) -> dict:
         "MODULE_SOURCE": s.get("module_source", "kernel"),
         "MODULE_LICENSE": s.get("module_license", "NVIDIA"),
         "GPU_FAMILIES": s["gpu_families"],
-        "EOL_NOTE": s["eol_note"],
+        # collapse folded-scalar newlines: a blank line would break a d/control field
+        "EOL_NOTE": " ".join(str(s["eol_note"]).split()),
         "STATUS": s["status"],
         "CODENAME": t["codename"],
         "OBS_REPO": t["obs_repo"],
