@@ -1,0 +1,56 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: NVIDIA Linux Display Driver (legacy @SERIES@ series)
+Upstream-Contact: https://www.nvidia.com/
+Source: https://download.nvidia.com/XFree86/
+Comment:
+ This package repackages the proprietary NVIDIA Accelerated Linux Graphics
+ Driver, version @VERSION@, as a reproducible build. The driver binaries are
+ NOT free software. They are redistributed under the "License For Customer Use
+ of NVIDIA Software" (reproduced below).
+ .
+ Only the Debian packaging, the build tooling and the compatibility patches in
+ debian/patches/ are covered by the packaging license.
+
+Files: debian/*
+Copyright: 2026 nvidia-legacy contributors <https://github.com/kami911/nvidia-legacy>
+License: Expat
+
+Files: debian/patches/*
+Copyright: Debian NVIDIA Maintainers; Ubuntu "butterfly" (kelebek333); Arch Linux
+ nvidia-@SERIES@ maintainers; MeowIce; and other contributors as recorded in
+ nvidia-legacy-common/patches/@SERIES@/PROVENANCE.toml
+License: Expat or as stated per-patch in PROVENANCE.toml
+
+Files: *
+Copyright: 2004-2022 NVIDIA Corporation
+License: NVIDIA-Software-License
+ License For Customer Use of NVIDIA Software.
+ .
+ The full text is shipped in the upstream .run installer as the file
+ "LICENSE" and is installed to
+ /usr/share/doc/nvidia-legacy-@SERIES@-driver-libs/LICENSE .
+ .
+ Redistribution: NVIDIA's license permits redistribution of the driver in
+ object form as part of a software package, provided the license text and
+ copyright notice accompany it and the package is not sold on its own. This
+ repository ships the license text with every binary package and does not
+ sell the packages.
+
+License: Expat
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.

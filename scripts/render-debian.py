@@ -68,6 +68,8 @@ def load_cfg(series: str, target: str) -> dict:
         "VERSION": s["version"],
         "DKMS_NAME": f"nvidia-legacy-{series}",
         "DKMS_VERSION": s["version"],
+        "MODULE_SOURCE": s.get("module_source", "kernel"),
+        "MODULE_LICENSE": s.get("module_license", "NVIDIA"),
         "GPU_FAMILIES": s["gpu_families"],
         "EOL_NOTE": s["eol_note"],
         "STATUS": s["status"],
@@ -95,6 +97,7 @@ def load_cfg(series: str, target: str) -> dict:
             "vulkan": s["provides_vulkan"],
             "nvenc": s["provides_nvenc"],
             "insecure": series in ("340xx", "304xx", "173xx", "96xx", "71xx"),
+            "open_module": s.get("module_source") == "kernel-open",
         },
         "_sde": source_date_epoch(),
     }

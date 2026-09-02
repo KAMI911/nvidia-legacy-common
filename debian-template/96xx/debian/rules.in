@@ -32,7 +32,7 @@ override_dh_auto_install:
 %if dkms
 	# --- DKMS module source tree -------------------------------------------
 	install -d $(DKMS_SRC)
-	SRCD=$$(test -d "$(PAYLOAD)/kernel" && echo kernel || echo usr/src/nv); cp -a "$(PAYLOAD)/$$SRCD/." $(DKMS_SRC)/
+	SRCD=@MODULE_SOURCE@; test -d "$(PAYLOAD)/$$SRCD" || SRCD=$$(test -d "$(PAYLOAD)/kernel" && echo kernel || echo usr/src/nv); cp -a "$(PAYLOAD)/$$SRCD/." $(DKMS_SRC)/
 	# apply the gated kernel/build patches into the module tree
 	set -e; cd $(DKMS_SRC); \
 	  for p in $(sort $(wildcard $(CURDIR)/debian/patches/kernel/*.patch*) \

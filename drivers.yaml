@@ -28,7 +28,7 @@ defaults:
 series:
 
   "580xx":
-    version: "580.95.05"         # ACTIVE legacy branch — bump as NVIDIA respins
+    version: "580.178.04"         # ACTIVE legacy branch — bump as NVIDIA respins
     status: supported
     gpu_families: "Maxwell, Pascal, Volta (GeForce GTX 700/900/1000, TITAN V)"
     eol_note: >
@@ -39,12 +39,39 @@ series:
     lib_architectures: [amd64]
     xorg_abi_max: 25
     kernel_max: "6.16"
-    variants: [proprietary, open] # 580xx also has an open-kernel-module flavour
+    module_source: kernel          # proprietary modules
     runs:
       amd64:
-        run: "NVIDIA-Linux-x86_64-580.95.05.run"
+        run: "NVIDIA-Linux-x86_64-580.178.04.run"
         url_kind: default
-        sha256: "UNVERIFIED"
+        sha256: "5975a86ee45bffcb626f51ae33d1169b108186a2ea47ad651e72f13fa4b6d6f9"
+        sha512: "53ea96e4d1342003238aaa37495df8939b0e8813b8088347ec406a4c066bdfcf9947abc71f05da9433bfbee7b04b67f8a2bfb9729423ec776c0b1e31d5ce1b77"
+    provides_egl: true
+    provides_vulkan: true
+    provides_nvenc: true
+
+  "580xx-open":
+    version: "580.178.04"
+    status: supported
+    gpu_families: "Turing+ recommended; also Maxwell/Pascal/Volta (same GPUs as 580xx)"
+    eol_note: >
+      Open-source flavour of the 580 branch: builds the kernel-open/ modules
+      (MIT/GPL-2 dual-licensed) instead of the proprietary blob modules. Same
+      userspace libraries. NVIDIA's preferred path going forward.
+    active_upstream: true
+    architectures: [amd64]
+    lib_architectures: [amd64]
+    xorg_abi_max: 25
+    kernel_max: "6.16"
+    module_source: kernel-open    # <- the free modules in the same .run
+    module_license: "MIT/GPL-2"
+    same_run_as: "580xx"           # verify-run reuses the 580xx blob + hash
+    runs:
+      amd64:
+        run: "NVIDIA-Linux-x86_64-580.178.04.run"
+        url_kind: default
+        sha256: "5975a86ee45bffcb626f51ae33d1169b108186a2ea47ad651e72f13fa4b6d6f9"
+        sha512: "53ea96e4d1342003238aaa37495df8939b0e8813b8088347ec406a4c066bdfcf9947abc71f05da9433bfbee7b04b67f8a2bfb9729423ec776c0b1e31d5ce1b77"
     provides_egl: true
     provides_vulkan: true
     provides_nvenc: true
