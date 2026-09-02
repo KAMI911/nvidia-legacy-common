@@ -11,7 +11,16 @@
 set -eu
 PAYLOAD="$1"; DEST="$2"; MA="$3"; VER="$4"
 LIBDIR="$DEST/usr/lib/$MA"
-S="$(basename "$(dirname "$0")")"      # unused; kept for parity
+
+# i386 build: the 32-bit libraries live in the amd64 .run's 32/ subdir. Binaries
+# and Xorg modules are 64-bit only — an i386 build ships libraries only.
+LIBS_ONLY=0
+case "$MA" in
+  i386-linux-gnu)
+    [ -d "$PAYLOAD/32" ] && PAYLOAD_LIBS="$PAYLOAD/32" || PAYLOAD_LIBS="$PAYLOAD"
+    LIBS_ONLY=1 ;;
+  *) PAYLOAD_LIBS="$PAYLOAD" ;;
+esac
 
 install -d "$LIBDIR" "$DEST/usr/bin" \
           "$DEST/usr/lib/xorg/modules/drivers" \
@@ -27,13 +36,16 @@ soname() {   # echo the DT_SONAME of $1, or empty
 # --- shared objects: every versioned .so the payload ships ------------------
 # NB: a runtime driver package ships libfoo.so.VER and the SONAME link
 # libfoo.so.N — but NOT the bare libfoo.so (that is a -dev symlink).
-for so in "$PAYLOAD"/*.so."$VER" "$PAYLOAD"/*.so.[0-9]*; do
+for so in "$PAYLOAD_LIBS"/*.so."$VER" "$PAYLOAD_LIBS"/*.so.[0-9]*; do
   [ -e "$so" ] || continue
   b="$(basename "$so")"
   case "$b" in
-    tls_test_dso.so|*_test_*.so|libvdpau.so.*|libvdpau_trace.so.*|libnvidia-pkcs11.so.*|libGLdispatch.so.*|libOpenGL.so.*) continue ;;                       # test artefacts
-    nvidia_drv.so) install -m0644 "$so" "$DEST/usr/lib/xorg/modules/drivers/$b"; continue ;;
+    tls_test_dso.so|*_test_*.so|libvdpau.so.*|libvdpau_trace.so.*|libnvidia-pkcs11.so.*|libGLdispatch.so.*|libOpenGL.so.*) continue ;;
+    nvidia_drv.so)
+      [ "$LIBS_ONLY" = 1 ] && continue
+      install -m0644 "$so" "$DEST/usr/lib/xorg/modules/drivers/$b"; continue ;;
     libglxserver_nvidia.so.*|libglx.so.*)
+      [ "$LIBS_ONLY" = 1 ] && continue
       install -m0644 "$so" "$DEST/usr/lib/xorg/modules/extensions/$b"; continue ;;
   esac
   install -m0644 "$so" "$LIBDIR/$b"
@@ -41,14 +53,16 @@ for so in "$PAYLOAD"/*.so."$VER" "$PAYLOAD"/*.so.[0-9]*; do
   [ -n "$sn" ] && [ "$sn" != "$b" ] && ln -sf "$b" "$LIBDIR/$sn" || true
 done
 
-# --- Xorg driver + GLX extension (also matched above, be explicit) -----------
+[ "$LIBS_ONLY" = 1 ] && { echo "install-userspace.sh: i386 libs-only ($(find "$LIBDIR" -name '*.so*'|wc -l))"; exit 0; }
+
+# --- Xorg driver + GLX extension (64-bit only) ------------------------------
 [ -e "$PAYLOAD/nvidia_drv.so" ] && install -m0644 "$PAYLOAD/nvidia_drv.so" \
   "$DEST/usr/lib/xorg/modules/drivers/nvidia_drv.so" || true
 for g in "$PAYLOAD"/libglx.so."$VER" "$PAYLOAD"/libglxserver_nvidia.so."$VER"; do
   [ -e "$g" ] && install -m0644 "$g" "$DEST/usr/lib/xorg/modules/extensions/$(basename "$g")" || true
 done
 
-# --- utilities --------------------------------------------------------------
+# --- utilities (64-bit only) ----------------------------------------------
 for b in nvidia-smi nvidia-debugdump nvidia-cuda-mps-control nvidia-cuda-mps-server \
          nvidia-persistenced nvidia-modprobe nvidia-xconfig nvidia-settings \
          nvidia-sleep.sh nvidia-bug-report.sh; do
