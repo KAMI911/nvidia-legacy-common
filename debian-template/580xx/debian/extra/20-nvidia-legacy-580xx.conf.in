@@ -1,0 +1,32 @@
+# X.Org configuration snippet for the NVIDIA @VERSION@ (@SERIES@) driver.
+# Copied to /etc/X11/xorg.conf.d/ by the kernel-support postinst if no admin
+# copy exists there yet.
+Section "Files"
+    ModulePath "/usr/lib/xorg/modules/updates"
+    ModulePath "/usr/lib/xorg/modules"
+EndSection
+
+Section "Module"
+    Load "glx"
+EndSection
+
+Section "Device"
+    Identifier  "nvidia-legacy-@SERIES@"
+    Driver      "nvidia"
+    Option      "NoLogo" "true"
+EndSection
+
+Section "OutputClass"
+    Identifier   "nvidia-legacy-@SERIES@"
+    MatchDriver  "nvidia"
+    Driver       "nvidia"
+EndSection
+%if ignoreabi
+
+# @TARGET@ ships X server video ABI @TARGET_XSERVER_ABI@, newer than the
+# @XORG_ABI_MAX@ this driver was built for. Without this the server refuses to
+# load nvidia_drv.so. Loading anyway is not guaranteed stable — best-effort.
+Section "ServerFlags"
+    Option "IgnoreABI" "1"
+EndSection
+%endif

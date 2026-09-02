@@ -1,0 +1,8 @@
+nvidia-legacy-@SERIES@-driver is a metapackage. It pulls in the runtime
+libraries, the Xorg driver, the utilities, the kernel-support glue and (for the
+DKMS flavour) the DKMS module source for NVIDIA @VERSION@.
+
+Hardware: @GPU_FAMILIES@
+Upstream status: @EOL_NOTE@
+
+To remove every trace:  apt purge '~nnvidia-legacy-@SERIES@-.*'

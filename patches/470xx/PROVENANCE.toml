@@ -1,0 +1,59 @@
+# Provenance for every patch under patches/470xx/.
+# One [[patch]] block per file. `import-patches.sh` verifies that every *.patch
+# on disk has a block here (and vice versa) — CI fails otherwise.
+#
+# Filename convention (gates, see apply-patches.sh / render-debian.py):
+#   NNNN-short-description[.kmax-<maj>.<min>][.abimin-<abi>].patch
+#     .kmax-6.12  : only include when the target kernel_max >= 6.12
+#     .abimin-25  : only include when the target xserver_abi <= 25 ... (min the driver needs)
+
+series = "470xx"
+upstream_version = "470.256.02"
+
+# ---------------------------------------------------------------------------
+# Sources — reference ../SOURCES.toml by id; override/pin here as needed.
+[[source]]
+id = "aur-470"
+git = "https://aur.archlinux.org/nvidia-470xx-dkms.git"
+also = "https://aur.archlinux.org/nvidia-470xx-utils.git"
+license = "per-file; mostly public-domain / GPL-2 kernel build fixes"
+patches_of_interest = [
+  "kernel-6.12.patch", "kernel-6.13.patch", "kernel-6.14.patch",
+  "kernel-6.15.patch", "kernel-6.17.patch", "gcc-14.patch", "gcc-15.patch",
+]
+
+[[source]]
+id = "debian"
+git = "https://salsa.debian.org/nvidia-team/nvidia-graphics-drivers-legacy-470xx.git"
+path = "debian/patches"
+license = "see debian/copyright (mostly Expat / public-domain build fixes)"
+
+[[source]]
+id = "butterfly"
+git = "https://github.com/kelebek333/nvidia-legacy"
+ppa = "ppa:kelebek333/nvidia-legacy"
+license = "GPL-2 build fixes / Expat"
+
+[[source]]
+id = "meowice"
+git = "https://github.com/MeowIce/nvidia-legacy"
+branch = "470.256.02"
+license = "MIT (repo LICENSE)"
+
+# ---------------------------------------------------------------------------
+# Imported patches (populated by import-patches.sh; example entries shown):
+
+# [[patch]]
+# file = "kernel/0050-kernel-6.12.patch.kmax-6.12"
+# from = "aur-470"
+# origin_commit = "<sha>"
+# origin_path = "kernel-6.12.patch"
+# fixes = "build against Linux 6.12 (fault API, tsc, folio changes)"
+# license = "GPL-2"
+
+# [[patch]]
+# file = "build/0010-gcc-15.patch"
+# from = "aur-470"
+# origin_commit = "<sha>"
+# fixes = "gcc 15 -Werror=implicit-int / incompatible-pointer-types in conftest"
+# license = "public-domain"
