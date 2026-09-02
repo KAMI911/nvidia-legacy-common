@@ -74,6 +74,8 @@ override_dh_shlibdeps:
 	dh_shlibdeps \
 	  $(foreach p,$(shell dh_listpackages),-l$(CURDIR)/debian/$(p)/usr/lib/$(DEB_HOST_MULTIARCH)) \
 	  -Xnvidia_drv.so -Xlibglxserver_nvidia \
+	  -Xlibnvidia-egl-wayland -Xlibnvidia-egl-gbm -Xlibnvidia-vulkan-producer \
+	  -Xlibnvidia-pkcs11 -Xlibnvidia-ngx -Xlibnvidia-vksc \
 	  -- --ignore-missing-info \
 	     --warnings=0
 
