@@ -60,6 +60,14 @@ execute_after_dh_fixperms:
 override_dh_strip:
 	dh_strip --no-automatic-dbgsym
 
+override_dh_dwz:
+	# NVIDIA blobs carry no .debug_info — nothing for dwz to do
+
+override_dh_makeshlibs:
+	# these are private driver libs, not a public shared-lib package — no shlibs
+	dh_makeshlibs -Xlibnvidia -Xlibcuda -Xlibnvcuvid -XlibGLX_nvidia \
+	  -XlibEGL_nvidia -XlibGLESv -Xlibvdpau_nvidia -Xlibglx
+
 override_dh_shlibdeps:
 	# let dpkg-shlibdeps resolve the inter-NVIDIA SONAMEs (libnvidia-*, libcuda,
 	# libnvcuvid, libGLX_nvidia ...) against our own just-staged packages

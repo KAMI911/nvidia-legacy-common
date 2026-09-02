@@ -14,9 +14,14 @@ Build-Depends:
 # runtime libs the prebuilt NVIDIA .so files link against — needed so
 # dpkg-shlibdeps can resolve their SONAMEs at build time
  libc6-dev,
- libx11-6, libxext6, libxv1, libxrandr2, libgl1,
+ libx11-6, libxext6, libxv1, libxrandr2, libxrender1, libxfixes3, libxi6,
+ libgl1, libglx0, libglvnd0,
  libwayland-client0, libwayland-server0,
  libpciaccess0,
+# nvidia-settings' bundled GTK backends (libnvidia-gtk2/3) link against these
+ libgtk2.0-0t64 | libgtk2.0-0,
+ libgtk-3-0t64 | libgtk-3-0,
+ libgdk-pixbuf-2.0-0,
 Rules-Requires-Root: no
 Standards-Version: 4.6.2
 Homepage: https://github.com/kami911/nvidia-legacy
