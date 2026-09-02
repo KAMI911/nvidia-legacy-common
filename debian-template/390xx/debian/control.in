@@ -6,10 +6,17 @@ Build-Depends:
  debhelper-compat (= 13),
  dh-dkms,
  dpkg-dev (>= 1.20.0),
+ binutils,
 %if modules
  linux-headers-generic | linux-headers-amd64 | linux-headers-686-pae,
 %endif
  xz-utils,
+# runtime libs the prebuilt NVIDIA .so files link against — needed so
+# dpkg-shlibdeps can resolve their SONAMEs at build time
+ libc6-dev,
+ libx11-6, libxext6, libxv1, libxrandr2, libgl1,
+ libwayland-client0, libwayland-server0,
+ libpciaccess0,
 Rules-Requires-Root: no
 Standards-Version: 4.6.2
 Homepage: https://github.com/kami911/nvidia-legacy
@@ -61,16 +68,6 @@ Description: NVIDIA legacy @VERSION@ driver metapackage (@GPU_FAMILIES@)
  (@XORG_ABI_MAX@). IgnoreABI is enabled automatically. Test before relying on it.
 %endif
 
-Package: nvidia-legacy-@SERIES@-driver-libs
-Architecture: @LIB_ARCHS@
-Multi-Arch: same
-Depends: ${misc:Depends}, ${shlibs:Depends}
-Provides: nvidia-legacy-@SERIES@-driver-libs-nonglvnd
-Description: NVIDIA legacy @VERSION@ driver — core runtime libraries
- Shared libraries used by the NVIDIA @VERSION@ driver: libnvidia-glcore,
- libnvidia-tls, libnvidia-eglcore and friends. Install the :i386 variant
- alongside for 32-bit OpenGL applications.
-
 Package: nvidia-legacy-@SERIES@-driver-bin
 Architecture: @KERNEL_ARCHS@
 Depends: ${misc:Depends}, ${shlibs:Depends}
@@ -109,6 +106,18 @@ Depends: ${misc:Depends}, ${shlibs:Depends}
 Provides: vdpau-driver
 Description: NVIDIA legacy @VERSION@ driver — VDPAU backend
  libvdpau_nvidia.so, the VDPAU hardware video acceleration backend.
+
+Package: nvidia-legacy-@SERIES@-driver-libs
+Architecture: @LIB_ARCHS@
+Multi-Arch: same
+Section: non-free/libs
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Provides: nvidia-legacy-@SERIES@-driver-libs-nonglvnd
+Description: NVIDIA legacy @VERSION@ driver — core runtime libraries
+ Every remaining shared library from the NVIDIA @VERSION@ userspace (the ones
+ not split into the -glx / -vdpau packages): libnvidia-glcore, libnvidia-tls,
+ libnvidia-eglcore, libnvidia-ml, libcuda and friends. Install the :i386
+ variant alongside for 32-bit applications.
 
 Package: nvidia-legacy-@SERIES@-kernel-support
 Architecture: @KERNEL_ARCHS@

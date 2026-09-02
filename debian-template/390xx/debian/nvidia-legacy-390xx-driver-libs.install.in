@@ -1,10 +1,6 @@
-usr/lib/*/libnvidia-glcore.so.*
-usr/lib/*/libnvidia-tls.so.*
-usr/lib/*/libnvidia-eglcore.so.*
-usr/lib/*/libnvidia-glsi.so.*
-usr/lib/*/libnvidia-ml.so.*
-usr/lib/*/libnvidia-cfg.so.*
-usr/lib/*/libnvidia-fatbinaryloader.so.*
-usr/lib/*/libnvidia-opencl.so.*
-usr/lib/*/libnvidia-encode.so.*
-usr/share/doc/nvidia-legacy-@SERIES@-driver-libs/LICENSE
+# catch-all: every remaining shared object + doc. Packages listed BEFORE this one
+# in debian/control (-glx, xserver-xorg-video-*, -vdpau, -driver-bin) have
+# already claimed their files, so this is "the rest".
+usr/lib/*/lib*.so.*
+usr/share/doc/nvidia-legacy-driver-libs/*
+usr/share/vulkan/icd.d/*

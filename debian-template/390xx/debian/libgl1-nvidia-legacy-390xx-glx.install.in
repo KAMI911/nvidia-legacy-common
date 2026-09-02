@@ -1,2 +1,8 @@
 usr/lib/*/libGL.so.*
+usr/lib/*/libGLX_nvidia.so.*
+usr/lib/*/libEGL_nvidia.so.*
+usr/lib/*/libGLESv1_CM_nvidia.so.*
+usr/lib/*/libGLESv2_nvidia.so.*
+usr/lib/*/libnvidia-glvkspirv.so.*
 usr/lib/xorg/modules/extensions/libglx.so.*
+usr/lib/xorg/modules/extensions/libglxserver_nvidia.so.*

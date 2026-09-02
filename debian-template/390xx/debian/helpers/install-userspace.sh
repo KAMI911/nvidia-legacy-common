@@ -1,40 +1,71 @@
 #!/bin/sh
 # install-userspace.sh <payload-dir> <destdir> <multiarch-triplet> <version>
-# Lay out the prebuilt NVIDIA userspace from the extracted .run payload into
-# debian/tmp, using paths the *.install files then split into binary packages.
+#
+# Lay out the prebuilt NVIDIA userspace from the extracted .run into <destdir>,
+# using paths the *.install / *.links files then split into binary packages.
+#
+# Strategy: copy EVERY versioned shared object the payload ships into
+# usr/lib/<MA>/, then synthesise the SONAME (.so.N) and dev (.so) symlinks from
+# each object's DT_SONAME. The *.install globs (libfoo.so.*) pick them up; what
+# a series does not ship simply is not there.
 set -eu
 PAYLOAD="$1"; DEST="$2"; MA="$3"; VER="$4"
 LIBDIR="$DEST/usr/lib/$MA"
-NVDIR="$LIBDIR/nvidia/legacy-390xx"
+S="$(basename "$(dirname "$0")")"      # unused; kept for parity
 
-install -d "$LIBDIR" "$NVDIR" "$DEST/usr/bin" "$DEST/usr/share/doc/nvidia-legacy-390xx-driver-libs" \
-          "$DEST/usr/lib/xorg/modules/drivers" "$DEST/usr/lib/xorg/modules/extensions"
+install -d "$LIBDIR" "$DEST/usr/bin" \
+          "$DEST/usr/lib/xorg/modules/drivers" \
+          "$DEST/usr/lib/xorg/modules/extensions" \
+          "$DEST/usr/share/doc/nvidia-legacy-driver-libs" \
+          "$DEST/usr/share/vulkan/icd.d" \
+          "$DEST/etc/vulkan/icd.d"
 
-copy() { [ -e "$PAYLOAD/$1" ] && install -m "$3" "$PAYLOAD/$1" "$2" || echo "  (skip $1)"; }
+soname() {   # echo the DT_SONAME of $1, or empty
+  ${OBJDUMP:-objdump} -p "$1" 2>/dev/null | awk '/SONAME/{print $2; exit}'
+}
 
-# --- core runtime libraries (driver-libs) ---
-for so in libnvidia-glcore libnvidia-tls libnvidia-eglcore libnvidia-glsi \
-          libnvidia-ml libnvidia-cfg libnvidia-fatbinaryloader \
-          libnvidia-encode libnvidia-opencl libvdpau_nvidia; do
-  copy "${so}.so.$VER" "$LIBDIR/${so}.so.$VER" 0644
+# --- shared objects: everything the payload ships at top level ---------------
+for so in "$PAYLOAD"/*.so."$VER" "$PAYLOAD"/*.so.1 "$PAYLOAD"/*.so; do
+  [ -e "$so" ] || continue
+  b="$(basename "$so")"
+  case "$b" in
+    nvidia_drv.so)        install -m0644 "$so" "$DEST/usr/lib/xorg/modules/drivers/$b"; continue ;;
+    libglxserver_nvidia.*|libglx.so.*) install -m0644 "$so" "$DEST/usr/lib/xorg/modules/extensions/$b"; continue ;;
+  esac
+  install -m0644 "$so" "$LIBDIR/$b"
+  # SONAME link
+  sn="$(soname "$so" || true)"
+  if [ -n "$sn" ] && [ "$sn" != "$b" ]; then
+    ln -sf "$b" "$LIBDIR/$sn"
+  fi
+  # bare dev link libFoo.so -> libFoo.so.SONAME (only for libs that carry one)
+  stem="${b%%.so.*}"
+  [ -n "$sn" ] && ln -sf "$sn" "$LIBDIR/${stem}.so" 2>/dev/null || true
 done
 
-# --- GL / GLX (libgl1-...-glx) ---
-copy "libGL.so.$VER"          "$LIBDIR/libGL.so.$VER" 0644
-copy "libnvidia-glvkspirv.so.$VER" "$LIBDIR/libnvidia-glvkspirv.so.$VER" 0644
-copy "libglx.so.$VER"         "$DEST/usr/lib/xorg/modules/extensions/libglx.so.$VER" 0644
+# --- Xorg driver + GLX extension (also matched above, be explicit) -----------
+[ -e "$PAYLOAD/nvidia_drv.so" ] && install -m0644 "$PAYLOAD/nvidia_drv.so" \
+  "$DEST/usr/lib/xorg/modules/drivers/nvidia_drv.so" || true
+for g in "$PAYLOAD"/libglx.so."$VER" "$PAYLOAD"/libglxserver_nvidia.so."$VER"; do
+  [ -e "$g" ] && install -m0644 "$g" "$DEST/usr/lib/xorg/modules/extensions/$(basename "$g")" || true
+done
 
-# --- Xorg video driver ---
-copy "nvidia_drv.so"          "$DEST/usr/lib/xorg/modules/drivers/nvidia_drv.so" 0644
-
-# --- utilities (driver-bin) ---
+# --- utilities --------------------------------------------------------------
 for b in nvidia-smi nvidia-debugdump nvidia-cuda-mps-control nvidia-cuda-mps-server \
-         nvidia-persistenced nvidia-modprobe nvidia-xconfig nvidia-settings; do
-  copy "$b" "$DEST/usr/bin/$b" 0755
+         nvidia-persistenced nvidia-modprobe nvidia-xconfig nvidia-settings \
+         nvidia-sleep.sh nvidia-bug-report.sh; do
+  [ -e "$PAYLOAD/$b" ] && install -m0755 "$PAYLOAD/$b" "$DEST/usr/bin/$b" || true
 done
 
-# --- license / docs ---
-copy "LICENSE" "$DEST/usr/share/doc/nvidia-legacy-390xx-driver-libs/LICENSE" 0644
+# --- ICD / json manifests --------------------------------------------------
+for j in "$PAYLOAD"/nvidia_icd.json* "$PAYLOAD"/nvidia_layers.json "$PAYLOAD"/10_nvidia.json; do
+  [ -e "$j" ] && install -m0644 "$j" "$DEST/usr/share/vulkan/icd.d/$(basename "$j" .template)" || true
+done
 
-# ldconfig-style dev symlinks are created by the *.links files, not here.
-echo "install-userspace.sh: done ($MA)"
+# --- licence / docs ------------------------------------------------------
+for L in LICENSE NVIDIA_Changelog README.txt; do
+  [ -e "$PAYLOAD/$L" ] && install -m0644 "$PAYLOAD/$L" \
+    "$DEST/usr/share/doc/nvidia-legacy-driver-libs/$L" || true
+done
+
+echo "install-userspace.sh: staged $(find "$LIBDIR" -name '*.so*' | wc -l) lib entries for $MA"
