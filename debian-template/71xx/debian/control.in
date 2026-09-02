@@ -31,7 +31,7 @@ Vcs-Git: https://github.com/kami911/nvidia-legacy-@FLAVOUR@.git
 Vcs-Browser: https://github.com/kami911/nvidia-legacy-@FLAVOUR@
 
 Package: nvidia-legacy-@SERIES@-driver
-Architecture: @KERNEL_ARCHS@
+Architecture: @BIN_ARCHS@
 Depends:
  ${misc:Depends},
  nvidia-legacy-@SERIES@-driver-libs (= ${binary:Version}),
@@ -70,7 +70,7 @@ Description: NVIDIA legacy @VERSION@ driver metapackage (@GPU_FAMILIES@)
 %endif
 
 Package: nvidia-legacy-@SERIES@-driver-bin
-Architecture: @KERNEL_ARCHS@
+Architecture: @BIN_ARCHS@
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: NVIDIA legacy @VERSION@ driver — utilities
  nvidia-smi, nvidia-settings, nvidia-xconfig, nvidia-debugdump,
@@ -78,7 +78,7 @@ Description: NVIDIA legacy @VERSION@ driver — utilities
 
 %if has_x_driver
 Package: xserver-xorg-video-nvidia-legacy-@SERIES@
-Architecture: @KERNEL_ARCHS@
+Architecture: @BIN_ARCHS@
 Depends:
  ${misc:Depends}, ${shlibs:Depends},
  nvidia-legacy-@SERIES@-driver-libs (= ${binary:Version}),
@@ -110,7 +110,7 @@ Description: NVIDIA legacy @VERSION@ driver — runtime libraries
  :i386 variant alongside for 32-bit applications.
 
 Package: nvidia-legacy-@SERIES@-kernel-support
-Architecture: @KERNEL_ARCHS@
+Architecture: all
 Depends: ${misc:Depends}
 Description: NVIDIA legacy @VERSION@ driver — kernel/X integration glue
  Ships the nouveau blacklist, the modprobe alias, the initramfs hook, the udev
@@ -121,7 +121,7 @@ Description: NVIDIA legacy @VERSION@ driver — kernel/X integration glue
 
 %if dkms
 Package: nvidia-legacy-@SERIES@-kernel-dkms
-Architecture: @KERNEL_ARCHS@
+Architecture: all
 Section: non-free/kernel
 Depends: ${misc:Depends}, dkms (>= 3.0.3)
 Recommends: nvidia-legacy-@SERIES@-driver-libs

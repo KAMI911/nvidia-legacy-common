@@ -83,6 +83,9 @@ def load_cfg(series: str, target: str) -> dict:
         "DEFAULT_KERNEL": t["default_kernel"],
         "LIB_ARCHS": " ".join(s["lib_architectures"]),
         "KERNEL_ARCHS": " ".join(kernel_archs),
+        # the .run ships no 32-bit binaries or Xorg modules (only 32/ libs), so
+        # -driver-bin / xserver-xorg-video / -kernel-support are 64-bit only
+        "BIN_ARCHS": " ".join(a for a in kernel_archs if a != "i386") or "amd64",
         "ALL_ARCHS": " ".join(sorted(set(s["lib_architectures"]) | set(kernel_archs))),
         # flags for %if%
         "X_VIA": x_via,
