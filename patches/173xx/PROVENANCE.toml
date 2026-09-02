@@ -15,7 +15,7 @@ id = "304xx-derived"
 note = "hunks adapted from patches/304xx/kernel/* — same os-interface.c / nv-linux.h structure"
 
 [[patch]]
-file = "kernel/0001-timespec64-kernel-5.0.patch.kmax-5.0"
+file = "_needs-build-test/0001-timespec64-kernel-5.0.patch.kmax-5.0"
 from = "304xx-derived"
 adapted_from = "304xx/kernel/0006-do_gettimeofday-5.0.patch.kmax-5.0"
 fixes = "do_gettimeofday()/struct timeval removed in Linux 5.0; guarded timespec64 conversion in os-interface.c + nv.h"
