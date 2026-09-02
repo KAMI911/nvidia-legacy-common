@@ -47,7 +47,7 @@ Description: NVIDIA legacy @VERSION@ driver metapackage (@GPU_FAMILIES@)
 %endif
 
 Package: nvidia-legacy-@SERIES@-driver-libs
-Architecture: @KERNEL_ARCHS@
+Architecture: @LIB_ARCHS@
 Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Provides: nvidia-legacy-@SERIES@-driver-libs-nonglvnd
@@ -64,7 +64,7 @@ Description: NVIDIA legacy @VERSION@ driver — utilities
  the nvidia-persistenced daemon for the @VERSION@ driver.
 
 Package: libgl1-nvidia-legacy-@SERIES@-glx
-Architecture: @KERNEL_ARCHS@
+Architecture: @LIB_ARCHS@
 Multi-Arch: same
 Section: non-free/libs
 Depends: ${misc:Depends}, ${shlibs:Depends}, nvidia-legacy-@SERIES@-driver-libs (= ${binary:Version})
@@ -85,7 +85,7 @@ Description: NVIDIA legacy @VERSION@ driver — Xorg driver
  Officially targets X server video driver ABI <= @XORG_ABI_MAX@.
 
 Package: nvidia-legacy-@SERIES@-vdpau-driver
-Architecture: @KERNEL_ARCHS@
+Architecture: @LIB_ARCHS@
 Multi-Arch: same
 Section: non-free/libs
 Depends: ${misc:Depends}, ${shlibs:Depends}
