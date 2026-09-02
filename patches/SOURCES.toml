@@ -40,6 +40,19 @@ also = "https://aur.archlinux.org/nvidia-340xx-utils.git"
 note = "340.108-38+, patches kernel-6.x + gcc-14/15; git clone OK (web = Anubis)"
 
 [[source]]
+id = "flydiscohuebr-304"
+scope = "304xx"
+git = "https://github.com/flydiscohuebr/nvidia-304"
+note = """PRIMARY 304xx (active, 2026). Archlinux/nvidia-304.137/nvidia-304xx-utils/
+0001..0030 patches: kernel 3.19 .. 6.15 .. 7.0, gcc-14/15. Also ships a patched
+xorg-server 1.19 tree (with backported CVE fixes) + lib32 utils. We take the
+KERNEL patches only; the Xorg-1.19 route is not portable to Debian/Ubuntu.
+No LICENSE file — treat as build-fix patches, record provenance."""
+
+# NOTE: AUR nvidia-304xx-dkms is STALE (pkgver 304.125). Do not use it; prefer
+# flydiscohuebr-304 + Debian nvidia-team's legacy-304xx branch.
+
+[[source]]
 id = "aur-390"
 scope = "390xx"
 git = "https://aur.archlinux.org/nvidia-390xx-dkms.git"

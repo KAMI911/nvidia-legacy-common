@@ -47,7 +47,13 @@ def load_cfg(series: str, target: str) -> dict:
     if target not in doc["targets"]:
         sys.exit(f"unknown target {target!r}; have {', '.join(doc['targets'])}")
     s, t = doc["series"][series], doc["targets"][target]
+    if not s.get("modern_feasible", True):
+        sys.exit(f"{series} is modern_feasible: false — not buildable for {target}")
     abi_gap = t["xserver_abi"] > s["xorg_abi_max"]
+    # x_driver_gap: the X *driver* cannot load here at all (even with IgnoreABI);
+    # drop the xserver-xorg-video-* package, keep the kernel module + libs.
+    x_cap = s.get("x_driver_max_abi", s["xorg_abi_max"])
+    x_driver_gap = t["xserver_abi"] > x_cap
     best_effort = s["status"] != "supported" or abi_gap
     archs = [a for a in s["architectures"] if a != "i386" or t["i386_kernel"] or True]
     kernel_archs = [a for a in s["architectures"]
@@ -74,6 +80,8 @@ def load_cfg(series: str, target: str) -> dict:
         # flags for %if%
         "_flags": {
             "ignoreabi": abi_gap,
+            "x_driver_gap": x_driver_gap,
+            "has_x_driver": not x_driver_gap,
             "best_effort": best_effort,
             "i386_kernel": "i386" in kernel_archs,
             "egl": s["provides_egl"],

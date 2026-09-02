@@ -22,7 +22,9 @@ Depends:
  ${misc:Depends},
  nvidia-legacy-@SERIES@-driver-libs (= ${binary:Version}),
  nvidia-legacy-@SERIES@-driver-bin (= ${binary:Version}),
+%if has_x_driver
  xserver-xorg-video-nvidia-legacy-@SERIES@ (= ${binary:Version}),
+%endif
  nvidia-legacy-@SERIES@-kernel-support (= ${binary:Version}),
 %if dkms
  nvidia-legacy-@SERIES@-kernel-dkms (= ${binary:Version}),
@@ -73,6 +75,7 @@ Description: NVIDIA legacy @VERSION@ driver — libGL / GLX
  The NVIDIA implementation of libGL and the GLX extension for the @VERSION@
  driver, wired through glvnd where the distro provides it.
 
+%if has_x_driver
 Package: xserver-xorg-video-nvidia-legacy-@SERIES@
 Architecture: @KERNEL_ARCHS@
 Depends:
@@ -83,6 +86,7 @@ Provides: xorg-driver-video
 Description: NVIDIA legacy @VERSION@ driver — Xorg driver
  The nvidia_drv.so X.Org video driver from the @VERSION@ release.
  Officially targets X server video driver ABI <= @XORG_ABI_MAX@.
+%endif
 
 Package: nvidia-legacy-@SERIES@-vdpau-driver
 Architecture: @LIB_ARCHS@

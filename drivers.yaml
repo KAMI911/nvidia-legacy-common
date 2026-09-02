@@ -122,11 +122,19 @@ series:
     version: "304.137"
     status: best-effort
     gpu_families: "GeForce 6/7 series (NV4x, G7x)"
-    eol_note: "Upstream EOL 2017-09. Xorg ABI 23 max; newer targets need heavy patching."
+    eol_note: >
+      Upstream EOL 2017-09. Kernel module IS maintainable to Linux ~7.0
+      (flydiscohuebr/nvidia-304, 30 patches). The X driver only loads against
+      xserver video ABI <= 23 (xorg-server <= 1.19) — GLX symbol mismatches make
+      IgnoreABI unreliable on 1.20+. See docs/legacy-feasibility.md.
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
     xorg_abi_max: 23
-    kernel_max: "5.15"
+    kernel_max: "7.0"
+    # On targets whose xserver ABI > 23: build the kernel module + libs (CUDA /
+    # compute / VDPAU still work), but do NOT ship the broken X driver.
+    x_driver_max_abi: 23
+    modern_feasible: true          # kernel side only
     runs:
       amd64:
         run: "NVIDIA-Linux-x86_64-304.137.run"
@@ -140,68 +148,61 @@ series:
     provides_vulkan: false
     provides_nvenc: false
 
+  # ---------------------------------------------------------------------------
+  # 173xx / 96xx / 71xx: metadata kept for completeness, but NOT wired into any
+  # build target. These fail to build from kernel ~4.14 (spin_unlock_wait removal)
+  # and no maintained patch set carries them to 5.x/6.x. Their X drivers need
+  # xserver <= 1.15 / 1.12 / 1.4. Realistic home = Debian <= 10 era. Out of scope
+  # for the current targets (all >= Debian 11 / Ubuntu 20.04). See
+  # docs/legacy-feasibility.md. modern_feasible: false => regen/CI ignore them.
+  # ---------------------------------------------------------------------------
   "173xx":
     version: "173.14.39"
-    status: experimental
+    status: unsupported-modern
+    modern_feasible: false
     gpu_families: "GeForce FX 5xxx series (NV3x)"
-    eol_note: "Upstream EOL 2013. Xorg ABI ~15 max. Debian 11 / older targets only."
+    eol_note: "Upstream EOL 2013. Builds only up to kernel ~4.13, xserver <= 1.15."
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
     xorg_abi_max: 15
-    kernel_max: "4.9"
+    kernel_max: "4.13"
     runs:
-      amd64:
-        run: "NVIDIA-Linux-x86_64-173.14.39-pkg2.run"
-        url_kind: legacy
-        sha256: "UNVERIFIED"
-      i386:
-        run: "NVIDIA-Linux-x86-173.14.39-pkg1.run"
-        url_kind: legacy
-        sha256: "UNVERIFIED"
+      amd64: { run: "NVIDIA-Linux-x86_64-173.14.39-pkg2.run", url_kind: legacy, sha256: "UNVERIFIED" }
+      i386:  { run: "NVIDIA-Linux-x86-173.14.39-pkg1.run",    url_kind: legacy, sha256: "UNVERIFIED" }
     provides_egl: false
     provides_vulkan: false
     provides_nvenc: false
 
   "96xx":
     version: "96.43.23"
-    status: experimental
+    status: unsupported-modern
+    modern_feasible: false
     gpu_families: "GeForce 2/3/4 Ti series (NV1x, NV2x)"
-    eol_note: "Upstream EOL 2012. Xorg ABI ~10 max. i386-focused."
+    eol_note: "Upstream EOL 2012. Builds only up to kernel ~3.13, xserver <= 1.12."
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
     xorg_abi_max: 10
     kernel_max: "3.13"
     runs:
-      amd64:
-        run: "NVIDIA-Linux-x86_64-96.43.23-pkg2.run"
-        url_kind: legacy
-        sha256: "UNVERIFIED"
-      i386:
-        run: "NVIDIA-Linux-x86-96.43.23-pkg1.run"
-        url_kind: legacy
-        sha256: "UNVERIFIED"
+      amd64: { run: "NVIDIA-Linux-x86_64-96.43.23-pkg2.run", url_kind: legacy, sha256: "UNVERIFIED" }
+      i386:  { run: "NVIDIA-Linux-x86-96.43.23-pkg1.run",    url_kind: legacy, sha256: "UNVERIFIED" }
     provides_egl: false
     provides_vulkan: false
     provides_nvenc: false
 
   "71xx":
     version: "71.86.15"
-    status: experimental
+    status: unsupported-modern
+    modern_feasible: false
     gpu_families: "TNT/TNT2, GeForce 256, GeForce 2/4 MX (NV0x, NV1x)"
-    eol_note: "Upstream EOL 2011. Xorg ABI ~4 max. i386-focused, historical target only."
+    eol_note: "Upstream EOL 2011. Builds only up to kernel ~2.6.38, xserver <= 1.4."
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
     xorg_abi_max: 4
-    kernel_max: "3.9"
+    kernel_max: "2.6.38"
     runs:
-      amd64:
-        run: "NVIDIA-Linux-x86_64-71.86.15-pkg2.run"
-        url_kind: legacy
-        sha256: "UNVERIFIED"
-      i386:
-        run: "NVIDIA-Linux-x86-71.86.15-pkg1.run"
-        url_kind: legacy
-        sha256: "UNVERIFIED"
+      amd64: { run: "NVIDIA-Linux-x86_64-71.86.15-pkg2.run", url_kind: legacy, sha256: "UNVERIFIED" }
+      i386:  { run: "NVIDIA-Linux-x86-71.86.15-pkg1.run",    url_kind: legacy, sha256: "UNVERIFIED" }
     provides_egl: false
     provides_vulkan: false
     provides_nvenc: false
