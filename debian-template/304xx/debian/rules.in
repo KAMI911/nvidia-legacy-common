@@ -1,0 +1,72 @@
+#!/usr/bin/make -f
+# Reproducible build rules for nvidia-legacy-@SERIES@ (@VERSION@), flavour: @FLAVOUR@
+# Rendered by nvidia-legacy-common/scripts/render-debian.py — do not edit here.
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND  = -Wall
+export SOURCE_DATE_EPOCH ?= $(shell dpkg-parsechangelog -STimestamp)
+
+SERIES      := @SERIES@
+VERSION     := @VERSION@
+FLAVOUR     := @FLAVOUR@
+DKMS_NAME   := nvidia-legacy-$(SERIES)
+DKMS_SRC    := debian/nvidia-legacy-$(SERIES)-kernel-dkms/usr/src/$(DKMS_NAME)-$(VERSION)
+# payload/ is the extracted .run, delivered via the .orig tarball(s)
+PAYLOAD     := $(CURDIR)
+PAYLOAD32   := $(CURDIR)/i386-payload
+
+%:
+	dh $@ --with dkms
+
+override_dh_auto_configure:
+	# nothing to ./configure — the payload is prebuilt userspace + module sources
+
+override_dh_auto_build:
+	# userspace is prebuilt; only nvidia-settings CLI helpers (if any) are compiled
+	:
+
+override_dh_auto_install:
+	set -e; \
+	install -d debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH); \
+	debian/helpers/install-userspace.sh "$(PAYLOAD)" debian/tmp "$(DEB_HOST_MULTIARCH)" @VERSION@
+%if dkms
+	# --- DKMS module source tree -------------------------------------------
+	install -d $(DKMS_SRC)
+	cp -a "$(PAYLOAD)/kernel/." $(DKMS_SRC)/
+	# apply the gated kernel/build patches into the module tree
+	set -e; cd $(DKMS_SRC); \
+	  for p in $(sort $(wildcard $(CURDIR)/debian/patches/kernel/*.patch) \
+	                  $(wildcard $(CURDIR)/debian/patches/build/*.patch)); do \
+	    echo "  dkms-patch $$p"; patch -p1 --no-backup-if-mismatch < "$$p"; \
+	  done
+	# debian/dkms.conf is already fully rendered (version from drivers.yaml)
+	install -m 0644 debian/dkms.conf $(DKMS_SRC)/dkms.conf
+%endif
+%if modules
+	# --- prebuilt module: compiled by dh_dkms against the build chroot kernel
+	debian/helpers/build-prebuilt-module.sh "$(PAYLOAD)" "$(DKMS_NAME)" "$(VERSION)"
+%endif
+
+override_dh_dkms:
+%if dkms
+	dh_dkms -V $(VERSION)
+%endif
+
+execute_after_dh_fixperms:
+	# nvidia-modprobe is setuid root by design on real hardware installs
+	-chmod 4711 debian/nvidia-legacy-$(SERIES)-driver-bin/usr/bin/nvidia-modprobe
+
+override_dh_strip:
+	dh_strip --no-automatic-dbgsym
+
+override_dh_shlibdeps:
+	dh_shlibdeps -l/usr/lib/$(DEB_HOST_MULTIARCH)/nvidia/legacy-$(SERIES) \
+	  -- --ignore-missing-info
+
+override_dh_gencontrol:
+	dh_gencontrol -- -Vnvidia:Version=$(VERSION)
+
+# Determinism: clamp mtimes, sort tar members (dh_builddeb >= 1.20 does this),
+# never embed build paths.
+override_dh_builddeb:
+	dh_builddeb -- -Zxz -z9

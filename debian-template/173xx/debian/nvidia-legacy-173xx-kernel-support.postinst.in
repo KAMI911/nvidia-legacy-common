@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+XORGDIR=/etc/X11/xorg.conf.d
+SNIPPET=20-nvidia-legacy-@SERIES@.conf
+SHARED=/usr/share/nvidia-legacy-@SERIES@/xorg.conf.d/$SNIPPET
+
+case "$1" in
+    configure)
+        # Drop the X snippet into place only if the admin has not put one there.
+        if [ ! -e "$XORGDIR/$SNIPPET" ]; then
+            mkdir -p "$XORGDIR"
+            cp "$SHARED" "$XORGDIR/$SNIPPET"
+        fi
+        # Refresh module dep + initramfs so the nouveau blacklist takes effect.
+        if [ -x /sbin/depmod ] || command -v depmod >/dev/null 2>&1; then
+            depmod -a || true
+        fi
+        if command -v update-initramfs >/dev/null 2>&1; then
+            update-initramfs -u || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+exit 0

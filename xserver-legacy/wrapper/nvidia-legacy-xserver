@@ -1,0 +1,37 @@
+#!/bin/sh
+# nvidia-legacy-xserver — launch the private old Xorg that matches the installed
+# legacy NVIDIA driver. Used by the "Xorg (NVIDIA legacy)" session.
+set -eu
+
+PREFIX=/opt/nvidia-legacy
+CONF=/usr/share/nvidia-legacy/xorg-legacy.conf
+
+# Which driver series is installed? (kernel-support package marks it)
+series=""
+for s in 304xx 173xx 96xx 71xx; do
+    if [ -e "/usr/share/nvidia-legacy-$s/xorg.conf.d/20-nvidia-legacy-$s.conf" ]; then
+        series="$s"; break
+    fi
+done
+[ -n "$series" ] || { echo "nvidia-legacy-xserver: no legacy NVIDIA driver detected" >&2; exit 1; }
+
+# Map series -> abi dir (kept in sync with xservers.yaml at build time)
+case "$series" in
+    304xx) abi=23 ;;
+    173xx) abi=19 ;;
+    96xx)  abi=12 ;;
+    71xx)  abi=2  ;;
+esac
+XSRV="$PREFIX/xserver-$abi"
+[ -x "$XSRV/bin/Xorg" ] || {
+    echo "nvidia-legacy-xserver: xorg-server-legacy-nvidia-$abi not installed" >&2
+    echo "  apt install xorg-server-legacy-nvidia-$abi" >&2
+    exit 1
+}
+
+export LD_LIBRARY_PATH="$XSRV/lib:${LD_LIBRARY_PATH:-}"
+exec "$XSRV/bin/Xorg" \
+    -modulepath "$XSRV/lib/xorg/modules,$XSRV/lib/xorg/modules/extensions,$XSRV/lib/xorg/modules/drivers" \
+    -config "$CONF" \
+    -nolisten tcp \
+    "$@"

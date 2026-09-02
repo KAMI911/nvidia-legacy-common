@@ -1,0 +1,49 @@
+# Old X servers we build as co-installable, private-path packages for the legacy
+# NVIDIA blobs whose nvidia_drv.so / libglx.so cannot load on the distro X server.
+#
+# Each entry -> a binary package  xorg-server-legacy-nvidia-<abi>  installed under
+#   /opt/nvidia-legacy/xserver-<abi>/{bin,lib,share}
+# launched via the shared wrapper  /usr/bin/nvidia-legacy-xserver  and a
+# display-manager session file. Never replaces the distro Xorg.
+#
+# Build reality: old xorg-server needs patches to compile with gcc-14/15 and
+# current libX* — we carry those in xserver-legacy/debian/patches/<version>/.
+
+schema_version: 1
+
+servers:
+  "1.19":
+    version: "1.19.7"
+    video_abi: 23
+    tarball: "https://www.x.org/releases/individual/xserver/xorg-server-1.19.7.tar.bz2"
+    sha256: "UNVERIFIED"          # verify-run-style gate; fill with verify-xserver.sh
+    serves: [304xx]
+    status: best-effort
+    notes: "Last 1.19. Needs gcc-14 + libtirpc + openssl-3 build patches."
+
+  "1.15":
+    version: "1.15.1"
+    video_abi: 19
+    tarball: "https://www.x.org/releases/individual/xserver/xorg-server-1.15.1.tar.bz2"
+    sha256: "UNVERIFIED"
+    serves: [173xx]
+    status: experimental
+    notes: "173.14.39 max. Heavy build patching on a modern toolchain."
+
+  "1.12":
+    version: "1.12.4"
+    video_abi: 12
+    tarball: "https://www.x.org/releases/individual/xserver/xorg-server-1.12.4.tar.bz2"
+    sha256: "UNVERIFIED"
+    serves: [96xx]
+    status: experimental
+    notes: "96.43.23 max. Very likely needs a pinned old libpciaccess/pixman too."
+
+  "1.4":
+    version: "1.4.2"
+    video_abi: 2
+    tarball: "https://www.x.org/releases/individual/xserver/xorg-server-1.4.2.tar.bz2"
+    sha256: "UNVERIFIED"
+    serves: [71xx]
+    status: experimental
+    notes: "71.86.15 max. Effectively a museum build; expect a long patch queue."

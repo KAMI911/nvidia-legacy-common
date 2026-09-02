@@ -32,8 +32,14 @@ Depends:
 %if modules
  nvidia-legacy-@SERIES@-kernel-${kernel:Flavour} | nvidia-legacy-@SERIES@-kernel-dkms,
 %endif
-Recommends: libgl1-nvidia-legacy-@SERIES@-glx
-Conflicts: nvidia-driver, nvidia-legacy-340xx-driver, nvidia-legacy-470xx-driver
+Recommends:
+ libgl1-nvidia-legacy-@SERIES@-glx,
+%if legacy_xserver
+ xorg-server-legacy-nvidia-@X_LEGACY_ABI@,
+%endif
+Provides: nvidia-legacy-driver
+Conflicts: nvidia-driver, nvidia-legacy-driver
+Replaces: nvidia-legacy-driver
 Description: NVIDIA legacy @VERSION@ driver metapackage (@GPU_FAMILIES@)
  The @VERSION@ driver from the NVIDIA @SERIES@ legacy series, repackaged as a
  reproducible build for @CODENAME@.

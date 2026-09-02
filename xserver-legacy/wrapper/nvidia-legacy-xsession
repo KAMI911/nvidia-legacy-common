@@ -1,0 +1,27 @@
+#!/bin/sh
+# Minimal session entry point: start the private Xorg on a free VT, then run the
+# user's normal desktop against it. Display managers that speak the Xsession
+# protocol call this with the chosen session command as $1.
+set -eu
+
+VT="$(fgconsole 2>/dev/null || echo 2)"
+DISPLAY_NUM=:8
+export DISPLAY="$DISPLAY_NUM"
+
+/usr/bin/nvidia-legacy-xserver "$DISPLAY_NUM" "vt${VT}" -keeptty &
+XPID=$!
+trap 'kill "$XPID" 2>/dev/null || true' EXIT INT TERM
+
+# wait for the server socket
+for _ in $(seq 1 50); do
+    [ -S "/tmp/.X11-unix/X${DISPLAY_NUM#:}" ] && break
+    sleep 0.2
+done
+
+if [ $# -ge 1 ] && [ -n "$1" ]; then
+    exec "$@"
+elif [ -x "$HOME/.xsession" ]; then
+    exec "$HOME/.xsession"
+else
+    exec /etc/X11/Xsession
+fi

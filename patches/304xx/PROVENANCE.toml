@@ -1,0 +1,288 @@
+# Provenance for patches/304xx/ — flydiscohuebr/nvidia-304 import (auto-organised).
+series = "304xx"
+upstream_version = "304.137"
+
+[[source]]
+id = "flydiscohuebr-304"
+git = "https://github.com/flydiscohuebr/nvidia-304"
+path = "Archlinux/nvidia-304.137/nvidia-304xx-utils"
+license = "no explicit LICENSE — build-compat patches"
+
+[[patch]]
+file = "build/0001-disable-mtrr-4.3.patch"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0001-disable-mtrr-4.3.patch"
+origin_commit = "HEAD@import"
+fixes = "0001-disable-mtrr-4.3.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0002-pud-offset-4.12.patch.kmax-4.12"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0002-pud-offset-4.12.patch"
+origin_commit = "HEAD@import"
+fixes = "0002-pud-offset-4.12.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0003-nvidia-drm-pci-init-4.14.patch.kmax-4.14"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0003-nvidia-drm-pci-init-4.14.patch"
+origin_commit = "HEAD@import"
+fixes = "0003-nvidia-drm-pci-init-4.14.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0004-timer-4.15.patch.kmax-4.15"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0004-timer-4.15.patch"
+origin_commit = "HEAD@import"
+fixes = "0004-timer-4.15.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "build/0005-usercopy-4.16.patch"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0005-usercopy-4.16.patch"
+origin_commit = "HEAD@import"
+fixes = "0005-usercopy-4.16.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0006-do_gettimeofday-5.0.patch.kmax-5.0"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0006-do_gettimeofday-5.0.patch"
+origin_commit = "HEAD@import"
+fixes = "0006-do_gettimeofday-5.0.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0007-subdirs-5.3.patch.kmax-5.3"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0007-subdirs-5.3.patch"
+origin_commit = "HEAD@import"
+fixes = "0007-subdirs-5.3.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0008-on-each-cpu-5.3.patch.kmax-5.3"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0008-on-each-cpu-5.3.patch"
+origin_commit = "HEAD@import"
+fixes = "0008-on-each-cpu-5.3.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0009-remove-drmp-5.5.patch.kmax-5.5"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0009-remove-drmp-5.5.patch"
+origin_commit = "HEAD@import"
+fixes = "0009-remove-drmp-5.5.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0010-proc-ops-5.6.patch.kmax-5.6"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0010-proc-ops-5.6.patch"
+origin_commit = "HEAD@import"
+fixes = "0010-proc-ops-5.6.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0011-kernel-5.7.0-setmemoryarray.patch.kmax-5.7"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0011-kernel-5.7.0-setmemoryarray.patch"
+origin_commit = "HEAD@import"
+fixes = "0011-kernel-5.7.0-setmemoryarray.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0012-kernel5.8.patch.kmax-5.8"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0012-kernel5.8.patch"
+origin_commit = "HEAD@import"
+fixes = "0012-kernel5.8.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0013-kernel5.9.patch.kmax-5.9"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0013-kernel5.9.patch"
+origin_commit = "HEAD@import"
+fixes = "0013-kernel5.9.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0014-import-drm_legacy_pci_init-exit-from-src-linux-5.9.1.patch.kmax-5.9"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0014-import-drm_legacy_pci_init-exit-from-src-linux-5.9.1.patch"
+origin_commit = "HEAD@import"
+fixes = "0014-import-drm_legacy_pci_init-exit-from-src-linux-5.9.1.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "build/0015-add-static-and-nv_-prefix-to-copied-drm-legacy-bits.patch"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0015-add-static-and-nv_-prefix-to-copied-drm-legacy-bits.patch"
+origin_commit = "HEAD@import"
+fixes = "0015-add-static-and-nv_-prefix-to-copied-drm-legacy-bits.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "build/0016-fix-mistake.patch"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0016-fix-mistake.patch"
+origin_commit = "HEAD@import"
+fixes = "0016-fix-mistake.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0017-vmalloc5.9.patch"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0016-vmalloc5.9.patch"
+origin_commit = "HEAD@import"
+fixes = "0016-vmalloc5.9.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0018-patch-14-kernel-5.11.patch.kmax-5.11"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0017-patch-14-kernel-5.11.patch"
+origin_commit = "HEAD@import"
+fixes = "0017-patch-14-kernel-5.11.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0019-kernel5.14.patch.kmax-5.14"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0018-kernel5.14.patch"
+origin_commit = "HEAD@import"
+fixes = "0018-kernel5.14.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0020-kernel-5.16.patch.kmax-5.16"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0019-kernel-5.16.patch"
+origin_commit = "HEAD@import"
+fixes = "0019-kernel-5.16.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0021-kernel-5.17.patch.kmax-5.17"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0020-kernel-5.17.patch"
+origin_commit = "HEAD@import"
+fixes = "0020-kernel-5.17.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0022-kernel-5.18.patch.kmax-5.18"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0021-kernel-5.18.patch"
+origin_commit = "HEAD@import"
+fixes = "0021-kernel-5.18.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0023-kernel-6.0.patch.kmax-6.0"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0022-kernel-6.0.patch"
+origin_commit = "HEAD@import"
+fixes = "0022-kernel-6.0.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0024-kernel-6.2.patch.kmax-6.2"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0023-kernel-6.2.patch"
+origin_commit = "HEAD@import"
+fixes = "0023-kernel-6.2.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0025-kernel-6.3.patch.kmax-6.3"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0024-kernel-6.3.patch"
+origin_commit = "HEAD@import"
+fixes = "0024-kernel-6.3.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0026-kernel-6.5.patch.kmax-6.5"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0025-kernel-6.5.patch"
+origin_commit = "HEAD@import"
+fixes = "0025-kernel-6.5.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "build/0027-gcc14-fix.patch"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0026-gcc14-fix.patch"
+origin_commit = "HEAD@import"
+fixes = "0026-gcc14-fix.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "build/0028-failfast.patch"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0027-failfast.patch"
+origin_commit = "HEAD@import"
+fixes = "0027-failfast.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "build/0029-gcc15-fix.patch"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0028-gcc15-fix.patch"
+origin_commit = "HEAD@import"
+fixes = "0028-gcc15-fix.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0030-kernel-6.15.patch.kmax-6.15"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0029-kernel-6.15.patch"
+origin_commit = "HEAD@import"
+fixes = "0029-kernel-6.15.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"
+
+[[patch]]
+file = "kernel/0031-kernel-7.0.patch.kmax-7.0"
+from = "flydiscohuebr-304"
+origin_path = "Archlinux/nvidia-304.137/nvidia-304xx-utils/0030-kernel-7.0.patch"
+origin_commit = "HEAD@import"
+fixes = "0030-kernel-7.0.patch"
+license = "build-fix / no explicit licence"
+status = "imported — needs build-test"

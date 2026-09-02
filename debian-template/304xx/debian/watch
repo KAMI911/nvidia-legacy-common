@@ -1,0 +1,5 @@
+version=4
+# Legacy series is frozen upstream; this watch only detects a surprise respin.
+opts="mode=http, pgpmode=none" \
+  https://download.nvidia.com/XFree86/Linux-x86_64/ \
+  ([\d.]+)/ debian uupdate

@@ -1,0 +1,29 @@
+# autopkgtest — runs in a throwaway container/VM with NO NVIDIA GPU present.
+# The full harness lives in ../../tests/ of the flavour repo; these are the
+# in-archive smoke tests.
+
+Test-Command: /usr/share/nvidia-legacy-tests/install-purge.sh @SERIES@
+Depends: nvidia-legacy-@SERIES@-driver, nvidia-legacy-tests
+Restrictions: needs-root, allow-stderr, isolation-container
+
+Test-Command: /usr/share/nvidia-legacy-tests/file-conflicts.sh @SERIES@
+Depends: nvidia-legacy-@SERIES@-driver, nvidia-legacy-tests
+Restrictions: needs-root, allow-stderr, isolation-container
+
+%if dkms
+Test-Command: /usr/share/nvidia-legacy-tests/dkms-build.sh @SERIES@
+Depends: nvidia-legacy-@SERIES@-kernel-dkms, nvidia-legacy-tests,
+ linux-headers-generic | linux-headers-amd64
+Restrictions: needs-root, allow-stderr, isolation-machine, skippable
+%endif
+
+%if best_effort
+# best-effort target: record result but never fail the pipeline
+Test-Command: /usr/share/nvidia-legacy-tests/xorg-dummy.sh @SERIES@ || true
+Depends: nvidia-legacy-@SERIES@-driver, nvidia-legacy-tests, xserver-xorg-core, xvfb
+Restrictions: needs-root, allow-stderr, isolation-container, flaky
+%else
+Test-Command: /usr/share/nvidia-legacy-tests/xorg-dummy.sh @SERIES@
+Depends: nvidia-legacy-@SERIES@-driver, nvidia-legacy-tests, xserver-xorg-core, xvfb
+Restrictions: needs-root, allow-stderr, isolation-container
+%endif

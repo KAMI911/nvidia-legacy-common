@@ -1,0 +1,4 @@
+debian/extra/nvidia-blacklists-nouveau.conf    lib/modprobe.d/
+debian/extra/nvidia-legacy-@SERIES@.conf         lib/modprobe.d/
+debian/extra/20-nvidia-legacy-@SERIES@.conf      usr/share/nvidia-legacy-@SERIES@/xorg.conf.d/
+debian/extra/nvidia-legacy-@SERIES@.rules        lib/udev/rules.d/

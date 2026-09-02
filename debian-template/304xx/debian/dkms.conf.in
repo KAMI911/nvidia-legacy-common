@@ -1,0 +1,27 @@
+PACKAGE_NAME="@DKMS_NAME@"
+PACKAGE_VERSION="@DKMS_VERSION@"
+AUTOINSTALL="yes"
+
+# NVIDIA @VERSION@ ships its module makefile under kernel/
+MAKE[0]="'make' -j$(nproc) NV_EXCLUDE_BUILD_MODULES='' KERNEL_UNAME=${kernelver} modules"
+CLEAN="'make' -j$(nproc) KERNEL_UNAME=${kernelver} clean"
+
+BUILT_MODULE_NAME[0]="nvidia"
+BUILT_MODULE_LOCATION[0]="."
+DEST_MODULE_LOCATION[0]="/updates/dkms"
+
+BUILT_MODULE_NAME[1]="nvidia-modeset"
+BUILT_MODULE_LOCATION[1]="."
+DEST_MODULE_LOCATION[1]="/updates/dkms"
+
+BUILT_MODULE_NAME[2]="nvidia-drm"
+BUILT_MODULE_LOCATION[2]="."
+DEST_MODULE_LOCATION[2]="/updates/dkms"
+
+BUILT_MODULE_NAME[3]="nvidia-uvm"
+BUILT_MODULE_LOCATION[3]="."
+DEST_MODULE_LOCATION[3]="/updates/dkms"
+
+# Skip modules that a given kernel/arch cannot build (e.g. nvidia-drm on very old
+# kernels) instead of failing the whole DKMS build.
+BUILD_EXCLUSIVE_KERNEL_MIN="3.10"

@@ -1,0 +1,3 @@
+# dh_dkms reads this; the real dkms.conf is generated from dkms.conf.in by
+# debian/rules so the version stays single-sourced from drivers.yaml.
+@DKMS_NAME@/@DKMS_VERSION@

@@ -124,18 +124,16 @@ series:
     status: best-effort
     gpu_families: "GeForce 6/7 series (NV4x, G7x)"
     eol_note: >
-      Upstream EOL 2017-09. Kernel module IS maintainable to Linux ~7.0
-      (flydiscohuebr/nvidia-304, 30 patches). The X driver only loads against
-      xserver video ABI <= 23 (xorg-server <= 1.19) — GLX symbol mismatches make
-      IgnoreABI unreliable on 1.20+. See docs/legacy-feasibility.md.
+      Upstream EOL 2017-09. Kernel module forward-ported to Linux ~7.2 (import
+      flydiscohuebr/nvidia-304 + adapt 390xx patches). X driver needs the private
+      xorg-server-legacy-nvidia-23 (video ABI 23). See docs/legacy-feasibility.md.
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
     xorg_abi_max: 23
-    kernel_max: "7.0"
-    # On targets whose xserver ABI > 23: build the kernel module + libs (CUDA /
-    # compute / VDPAU still work), but do NOT ship the broken X driver.
+    kernel_max: "7.2"              # target of the forward-port track
+    x_via: legacy-xserver          # ship xorg-server-legacy-nvidia-23, not xserver-xorg-video-*
     x_driver_max_abi: 23
-    modern_feasible: true          # kernel side only
+    modern_feasible: true
     runs:
       amd64:
         run: "NVIDIA-Linux-x86_64-304.137.run"
@@ -150,23 +148,25 @@ series:
     provides_nvenc: false
 
   # ---------------------------------------------------------------------------
-  # 173xx / 96xx / 71xx: metadata kept for completeness, but NOT wired into any
-  # build target. These fail to build from kernel ~4.14 (spin_unlock_wait removal)
-  # and no maintained patch set carries them to 5.x/6.x. Their X drivers need
-  # xserver <= 1.15 / 1.12 / 1.4. Realistic home = Debian <= 10 era. Out of scope
-  # for the current targets (all >= Debian 11 / Ubuntu 20.04). See
-  # docs/legacy-feasibility.md. modern_feasible: false => regen/CI ignore them.
+  # 173xx / 96xx / 71xx: EXPERIMENTAL forward-port track (user-requested "try all
+  # three"). kernel_max = the forward-port TARGET, not a proven value. Progress
+  # per kernel: docs/forward-port-status/<series>.md (feasibility-recheck.sh).
+  # X via the private xorg-server-legacy-nvidia-<abi>. Never blocking in CI.
+  # Known hard blockers: 173 = spin_unlock_wait (4.14); 96/71 = 2.6-era pci/agp.
   # ---------------------------------------------------------------------------
   "173xx":
     version: "173.14.39"
-    status: unsupported-modern
-    modern_feasible: false
+    status: experimental
+    modern_feasible: true
+    forward_port: in-progress
     gpu_families: "GeForce FX 5xxx series (NV3x)"
-    eol_note: "Upstream EOL 2013. Builds only up to kernel ~4.13, xserver <= 1.15."
+    eol_note: "Upstream EOL 2013. Forward-port target kernel 6.12 LTS / xserver ABI 19."
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
-    xorg_abi_max: 15
-    kernel_max: "4.13"
+    xorg_abi_max: 19
+    x_via: legacy-xserver
+    x_driver_max_abi: 19
+    kernel_max: "6.12"
     runs:
       amd64: { run: "NVIDIA-Linux-x86_64-173.14.39-pkg2.run", url_kind: legacy, sha256: "UNVERIFIED" }
       i386:  { run: "NVIDIA-Linux-x86-173.14.39-pkg1.run",    url_kind: legacy, sha256: "UNVERIFIED" }
@@ -176,14 +176,17 @@ series:
 
   "96xx":
     version: "96.43.23"
-    status: unsupported-modern
-    modern_feasible: false
+    status: experimental
+    modern_feasible: true
+    forward_port: in-progress
     gpu_families: "GeForce 2/3/4 Ti series (NV1x, NV2x)"
-    eol_note: "Upstream EOL 2012. Builds only up to kernel ~3.13, xserver <= 1.12."
+    eol_note: "Upstream EOL 2012. Forward-port target kernel 6.12 LTS / xserver ABI 12. High risk."
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
-    xorg_abi_max: 10
-    kernel_max: "3.13"
+    xorg_abi_max: 12
+    x_via: legacy-xserver
+    x_driver_max_abi: 12
+    kernel_max: "6.12"
     runs:
       amd64: { run: "NVIDIA-Linux-x86_64-96.43.23-pkg2.run", url_kind: legacy, sha256: "UNVERIFIED" }
       i386:  { run: "NVIDIA-Linux-x86-96.43.23-pkg1.run",    url_kind: legacy, sha256: "UNVERIFIED" }
@@ -193,14 +196,17 @@ series:
 
   "71xx":
     version: "71.86.15"
-    status: unsupported-modern
-    modern_feasible: false
+    status: experimental
+    modern_feasible: true
+    forward_port: in-progress
     gpu_families: "TNT/TNT2, GeForce 256, GeForce 2/4 MX (NV0x, NV1x)"
-    eol_note: "Upstream EOL 2011. Builds only up to kernel ~2.6.38, xserver <= 1.4."
+    eol_note: "Upstream EOL 2011. Forward-port target kernel 6.12 LTS / xserver ABI 2. Very high risk."
     architectures: [amd64, i386]
     lib_architectures: [amd64, i386]
-    xorg_abi_max: 4
-    kernel_max: "2.6.38"
+    xorg_abi_max: 2
+    x_via: legacy-xserver
+    x_driver_max_abi: 2
+    kernel_max: "6.12"
     runs:
       amd64: { run: "NVIDIA-Linux-x86_64-71.86.15-pkg2.run", url_kind: legacy, sha256: "UNVERIFIED" }
       i386:  { run: "NVIDIA-Linux-x86-71.86.15-pkg1.run",    url_kind: legacy, sha256: "UNVERIFIED" }

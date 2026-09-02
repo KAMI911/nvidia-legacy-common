@@ -1,0 +1,12 @@
+Template: nvidia-legacy-@SERIES@-driver/eol-security-warning
+Type: note
+Description: NVIDIA @SERIES@ is an end-of-life driver with known vulnerabilities
+ You are installing NVIDIA @VERSION@ (the @SERIES@ legacy series).
+ .
+ This driver reached end of life and receives NO security updates from NVIDIA.
+ It has publicly documented, unpatched vulnerabilities. Kernel and Xorg
+ compatibility is provided only by community patches.
+ .
+ Recommended only for: isolated or offline machines, or hardware with no
+ supported-driver alternative. On an internet-connected desktop, prefer nouveau
+ or newer hardware.

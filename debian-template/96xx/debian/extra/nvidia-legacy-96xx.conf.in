@@ -1,0 +1,9 @@
+# modprobe options for the NVIDIA @VERSION@ (@SERIES@) driver.
+# Rename target: nvidia-legacy-@SERIES@.conf
+alias char-major-195* nvidia
+alias nvidia-current nvidia
+options nvidia NVreg_DeviceFileMode=0660 NVreg_DeviceFileGID=44
+# nvidia-drm modeset: keep OFF for legacy series unless the user opts in; the
+# legacy KMS path is fragile on modern kernels.
+options nvidia-drm modeset=0
+softdep nvidia post: nvidia-modeset nvidia-uvm

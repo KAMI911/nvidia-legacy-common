@@ -1,0 +1,38 @@
+#!/usr/bin/make -f
+# xorg-server-legacy-nvidia-@XABI@ — build xorg-server @XVER@ into a private prefix.
+export SOURCE_DATE_EPOCH ?= $(shell dpkg-parsechangelog -STimestamp)
+PREFIX = /opt/nvidia-legacy/xserver-@XABI@
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	./autogen.sh --prefix=$(PREFIX) \
+	  --with-xkb-path=/usr/share/X11/xkb \
+	  --with-xkb-output=/var/lib/xkb \
+	  --disable-docs --disable-devel-docs --disable-unit-tests \
+	  --disable-xnest --disable-xephyr --disable-xvfb --disable-xwayland \
+	  --disable-dri3 --enable-dri2 --enable-glx \
+	  --disable-systemd-logind --enable-suid-wrapper \
+	  --with-module-dir=$(PREFIX)/lib/xorg/modules \
+	  CFLAGS="$(shell dpkg-buildflags --get CFLAGS) -Wno-error -std=gnu17"
+
+override_dh_auto_install:
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
+	# the nvidia blob is symlinked in by the driver package's trigger, not here
+
+override_dh_install:
+	dh_install
+	# shared launcher/session go into nvidia-legacy-xserver-common
+	install -D -m0755 debian/wrapper/nvidia-legacy-xserver      debian/nvidia-legacy-xserver-common/usr/bin/nvidia-legacy-xserver
+	install -D -m0755 debian/wrapper/nvidia-legacy-xsession     debian/nvidia-legacy-xserver-common/usr/bin/nvidia-legacy-xsession
+	install -D -m0644 debian/wrapper/nvidia-legacy.desktop      debian/nvidia-legacy-xserver-common/usr/share/xsessions/nvidia-legacy.desktop
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 4755 debian/xorg-server-legacy-nvidia-@XABI@$(PREFIX)/lib/xorg/Xorg.wrap 2>/dev/null || true
+
+# old xorg-server is not reproducible-clean out of the box; we clamp what we can
+override_dh_dwz:
+override_dh_strip:
+	dh_strip --no-automatic-dbgsym

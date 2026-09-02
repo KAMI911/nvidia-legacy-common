@@ -1,0 +1,40 @@
+Source: xorg-server-legacy-nvidia-@XABI@
+Section: non-free/x11
+Priority: optional
+Maintainer: nvidia-legacy CI <ci@nvidia-legacy.invalid>
+Build-Depends:
+ debhelper-compat (= 13),
+ pkg-config, xutils-dev, x11proto-dev,
+ libx11-dev, libxext-dev, libxfont-dev | libxfont2-dev, libxkbfile-dev,
+ libpixman-1-dev, libpciaccess-dev, libgl-dev, libegl-dev,
+ libudev-dev, libselinux1-dev, libaudit-dev, libdbus-1-dev,
+ libssl-dev, libtirpc-dev, libbsd-dev,
+ flex, bison, xz-utils,
+Rules-Requires-Root: binary-targets
+Standards-Version: 4.6.2
+Homepage: https://github.com/kami911/nvidia-legacy
+
+Package: xorg-server-legacy-nvidia-@XABI@
+Architecture: amd64 i386
+Depends: ${misc:Depends}, ${shlibs:Depends}, nvidia-legacy-xserver-common
+Recommends: nvidia-legacy-@SERVES@-driver
+Description: private Xorg @XVER@ (video ABI @XABI@) for legacy NVIDIA blobs
+ A co-installable build of xorg-server @XVER@, installed under
+ /opt/nvidia-legacy/xserver-@XABI@/ and launched only via the
+ "Xorg (NVIDIA legacy)" login session. It provides X server video driver ABI
+ @XABI@, which the NVIDIA @SERVES@ nvidia_drv.so needs and which the
+ distribution X server (a much newer ABI) does not offer.
+ .
+ The distribution's own Xorg, Wayland and all other sessions are untouched.
+ .
+ SECURITY: an old X server receives no upstream fixes and is a larger attack
+ surface. Local-session CVEs are backported in debian/patches/@XVER@/security/.
+ Use only where the hardware leaves no alternative; prefer an isolated machine.
+
+Package: nvidia-legacy-xserver-common
+Architecture: all
+Depends: ${misc:Depends}
+Description: launcher + session for the private legacy NVIDIA X servers
+ The nvidia-legacy-xserver wrapper, the Xsession glue and the
+ "Xorg (NVIDIA legacy)" desktop-session file shared by every
+ xorg-server-legacy-nvidia-* package.

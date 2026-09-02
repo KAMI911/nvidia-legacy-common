@@ -1,0 +1,4 @@
+%if x_driver_gap
+usr/lib/xorg/modules/drivers/nvidia_drv.so
+usr/lib/xorg/modules/extensions/libglx.so.*
+%endif

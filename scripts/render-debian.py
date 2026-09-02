@@ -50,10 +50,14 @@ def load_cfg(series: str, target: str) -> dict:
     if not s.get("modern_feasible", True):
         sys.exit(f"{series} is modern_feasible: false — not buildable for {target}")
     abi_gap = t["xserver_abi"] > s["xorg_abi_max"]
-    # x_driver_gap: the X *driver* cannot load here at all (even with IgnoreABI);
-    # drop the xserver-xorg-video-* package, keep the kernel module + libs.
+    # x_via:
+    #   "distro-xorg"    (default) — nvidia_drv.so loads on the distro X server
+    #                    (natively, or with IgnoreABI when abi_gap)
+    #   "legacy-xserver" — needs the private old xorg-server-legacy-nvidia-<abi>;
+    #                    never ship xserver-xorg-video-*, Recommend the legacy server
+    x_via = s.get("x_via", "distro-xorg")
     x_cap = s.get("x_driver_max_abi", s["xorg_abi_max"])
-    x_driver_gap = t["xserver_abi"] > x_cap
+    x_driver_gap = x_via == "legacy-xserver" or t["xserver_abi"] > x_cap
     best_effort = s["status"] != "supported" or abi_gap
     archs = [a for a in s["architectures"] if a != "i386" or t["i386_kernel"] or True]
     kernel_archs = [a for a in s["architectures"]
@@ -78,10 +82,13 @@ def load_cfg(series: str, target: str) -> dict:
         "KERNEL_ARCHS": " ".join(kernel_archs),
         "ALL_ARCHS": " ".join(sorted(set(s["lib_architectures"]) | set(kernel_archs))),
         # flags for %if%
+        "X_VIA": x_via,
+        "X_LEGACY_ABI": str(x_cap),
         "_flags": {
-            "ignoreabi": abi_gap,
+            "ignoreabi": abi_gap and x_via == "distro-xorg",
             "x_driver_gap": x_driver_gap,
             "has_x_driver": not x_driver_gap,
+            "legacy_xserver": x_via == "legacy-xserver",
             "best_effort": best_effort,
             "i386_kernel": "i386" in kernel_archs,
             "egl": s["provides_egl"],

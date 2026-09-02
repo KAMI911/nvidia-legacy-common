@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Xorg (NVIDIA legacy)
+Comment=X session using the private old Xorg for legacy NVIDIA GPUs
+Exec=/usr/bin/nvidia-legacy-xsession
+TryExec=/usr/bin/nvidia-legacy-xserver
+Type=Application
+DesktopNames=NVIDIA-Legacy
