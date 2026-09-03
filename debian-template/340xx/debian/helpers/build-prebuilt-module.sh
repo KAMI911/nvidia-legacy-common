@@ -28,15 +28,16 @@ for p in $(ls debian/patches/kernel/*.patch* debian/patches/build/*.patch* 2>/de
   patch -d "$BUILD" -p1 --forward --no-backup-if-mismatch -F3 -r /dev/null < "$p" || test $? -le 1
 done
 
-# GLVND/modular kernel/Makefile has a `modules` target; flat legacy has singular
-# `module` (+ maybe uvm/). IGNORE_PREEMPT_RT_PRESENCE=1: build on RT too.
-MK="IGNORE_PREEMPT_RT_PRESENCE=1 KERNEL_UNAME=$KVER SYSSRC=$KSRC"
+# Build exactly the way DKMS does (proven on Debian split headers): pass
+# KERNEL_UNAME so NVIDIA's Makefile picks /lib/modules/$KVER/build itself —
+# do NOT force SYSSRC (that misroutes conftest -> "stdarg.h: No such file").
+# modular kernel/Makefile has a `modules` target; flat legacy has `module`.
 if grep -qE '^modules:' "$BUILD/Makefile" 2>/dev/null; then
-  make -C "$BUILD" -j"$(nproc)" $MK modules
+  make -C "$BUILD" -j"$(nproc)" IGNORE_PREEMPT_RT_PRESENCE=1 KERNEL_UNAME="$KVER" modules
 else
-  make -C "$BUILD" -j"$(nproc)" $MK module
-  [ -d "$BUILD/uvm" ] && make -C "$BUILD/uvm" $MK \
-    KBUILD_EXTMOD="$BUILD/uvm" module || true
+  make -C "$BUILD" -j"$(nproc)" IGNORE_PREEMPT_RT_PRESENCE=1 KERNEL_UNAME="$KVER" module
+  [ -d "$BUILD/uvm" ] && make -C "$BUILD/uvm" IGNORE_PREEMPT_RT_PRESENCE=1 \
+    KERNEL_UNAME="$KVER" KBUILD_EXTMOD="$BUILD/uvm" module || true
 fi
 
 n=0
