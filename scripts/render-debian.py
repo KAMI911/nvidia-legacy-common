@@ -77,6 +77,7 @@ def load_cfg(series: str, target: str) -> dict:
         "CODENAME": t["codename"],
         "OBS_REPO": t["obs_repo"],
         "TARGET": target,
+        "DH_COMPAT": str(t.get("dh_compat", 13)),
         "XORG_ABI_MAX": str(s["xorg_abi_max"]),
         "TARGET_XSERVER_ABI": str(t["xserver_abi"]),
         "KERNEL_MAX": s["kernel_max"],

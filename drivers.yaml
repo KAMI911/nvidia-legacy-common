@@ -262,10 +262,13 @@ series:
 
 # Distro targets. `xserver_abi` is the video driver ABI shipped by that release;
 # compared against series.xorg_abi_max to decide IgnoreABI + best-effort status.
+# `dh_compat` overrides the debhelper-compat level (default 13) — focal ships
+# only debhelper 12.
 targets:
   debian11:   { obs_repo: Debian_11,     codename: bullseye, xserver_abi: 24, i386_kernel: true,  default_kernel: "5.10" }
   debian12:   { obs_repo: Debian_12,     codename: bookworm, xserver_abi: 25, i386_kernel: true,  default_kernel: "6.1" }
   debian13:   { obs_repo: Debian_13,     codename: trixie,   xserver_abi: 25, i386_kernel: true,  default_kernel: "6.12" }
-  ubuntu2004: { obs_repo: xUbuntu_20.04, codename: focal,    xserver_abi: 24, i386_kernel: false, default_kernel: "5.4" }
+  ubuntu2004: { obs_repo: xUbuntu_20.04, codename: focal,    xserver_abi: 24, i386_kernel: false, default_kernel: "5.4",  dh_compat: 12 }
   ubuntu2204: { obs_repo: xUbuntu_22.04, codename: jammy,    xserver_abi: 25, i386_kernel: false, default_kernel: "5.15" }
   ubuntu2404: { obs_repo: xUbuntu_24.04, codename: noble,    xserver_abi: 25, i386_kernel: false, default_kernel: "6.8" }
+  ubuntu2604: { obs_repo: xUbuntu_26.04, codename: resolute,  xserver_abi: 25, i386_kernel: false, default_kernel: "6.14" }
