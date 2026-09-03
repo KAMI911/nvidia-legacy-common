@@ -1,59 +1,159 @@
-# Provenance for every patch under patches/470xx/.
-# One [[patch]] block per file. `import-patches.sh` verifies that every *.patch
-# on disk has a block here (and vice versa) — CI fails otherwise.
-#
-# Filename convention (gates, see apply-patches.sh / render-debian.py):
-#   NNNN-short-description[.kmax-<maj>.<min>][.abimin-<abi>].patch
-#     .kmax-6.12  : only include when the target kernel_max >= 6.12
-#     .abimin-25  : only include when the target xserver_abi <= 25 ... (min the driver needs)
-
-series = "470xx"
-upstream_version = "470.256.02"
-
-# ---------------------------------------------------------------------------
-# Sources — reference ../SOURCES.toml by id; override/pin here as needed.
-[[source]]
-id = "aur-470"
-git = "https://aur.archlinux.org/nvidia-470xx-dkms.git"
-also = "https://aur.archlinux.org/nvidia-470xx-utils.git"
-license = "per-file; mostly public-domain / GPL-2 kernel build fixes"
-patches_of_interest = [
-  "kernel-6.12.patch", "kernel-6.13.patch", "kernel-6.14.patch",
-  "kernel-6.15.patch", "kernel-6.17.patch", "gcc-14.patch", "gcc-15.patch",
-]
+# Provenance for patches/470xx/ — AUR nvidia-470xx-utils import (prepare() order).
+series="470xx"
+upstream_version="470.256.02"
 
 [[source]]
-id = "debian"
-git = "https://salsa.debian.org/nvidia-team/nvidia-graphics-drivers-legacy-470xx.git"
-path = "debian/patches"
-license = "see debian/copyright (mostly Expat / public-domain build fixes)"
+id="aur-470"
+git="https://aur.archlinux.org/nvidia-470xx-utils.git"
+also="https://github.com/joanbm/nvidia-470xx-linux-mainline"
+license="per-file; joanbm patches MIT-ish"
 
-[[source]]
-id = "butterfly"
-git = "https://github.com/kelebek333/nvidia-legacy"
-ppa = "ppa:kelebek333/nvidia-legacy"
-license = "GPL-2 build fixes / Expat"
+[[patch]]
+file = "kernel/0001-0001-Fix-conftest-to-ignore-implicit-function-declaration.patch"
+from="aur-470"
+origin_path="0001-Fix-conftest-to-ignore-implicit-function-declaration.patch"
+origin_commit="master@import-2026-09"
+fixes="0001-Fix-conftest-to-ignore-implicit-function-declaration.patch"
+license="build-fix"
 
-[[source]]
-id = "meowice"
-git = "https://github.com/MeowIce/nvidia-legacy"
-branch = "470.256.02"
-license = "MIT (repo LICENSE)"
+[[patch]]
+file = "kernel/0002-0002-Fix-conftest-to-use-a-short-wchar_t.patch"
+from="aur-470"
+origin_path="0002-Fix-conftest-to-use-a-short-wchar_t.patch"
+origin_commit="master@import-2026-09"
+fixes="0002-Fix-conftest-to-use-a-short-wchar_t.patch"
+license="build-fix"
 
-# ---------------------------------------------------------------------------
-# Imported patches (populated by import-patches.sh; example entries shown):
+[[patch]]
+file = "kernel/0003-0003-Fix-conftest-to-use-nv_drm_gem_vmap-which-has-the-se.patch"
+from="aur-470"
+origin_path="0003-Fix-conftest-to-use-nv_drm_gem_vmap-which-has-the-se.patch"
+origin_commit="master@import-2026-09"
+fixes="0003-Fix-conftest-to-use-nv_drm_gem_vmap-which-has-the-se.patch"
+license="build-fix"
 
-# [[patch]]
-# file = "kernel/0050-kernel-6.12.patch.kmax-6.12"
-# from = "aur-470"
-# origin_commit = "<sha>"
-# origin_path = "kernel-6.12.patch"
-# fixes = "build against Linux 6.12 (fault API, tsc, folio changes)"
-# license = "GPL-2"
+[[patch]]
+file = "kernel/0004-kernel-6.10.patch.kmax-6.10"
+from="aur-470"
+origin_path="kernel-6.10.patch"
+origin_commit="master@import-2026-09"
+fixes="kernel-6.10.patch"
+license="build-fix"
 
-# [[patch]]
-# file = "build/0010-gcc-15.patch"
-# from = "aur-470"
-# origin_commit = "<sha>"
-# fixes = "gcc 15 -Werror=implicit-int / incompatible-pointer-types in conftest"
-# license = "public-domain"
+[[patch]]
+file = "kernel/0005-kernel-6.12.patch.kmax-6.12"
+from="aur-470"
+origin_path="kernel-6.12.patch"
+origin_commit="master@import-2026-09"
+fixes="kernel-6.12.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0006-gcc-15.patch"
+from="aur-470"
+origin_path="nvidia-470xx-fix-gcc-15.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-gcc-15.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0007-linux-6.13.patch.kmax-6.13"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-6.13.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-6.13.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0008-linux-6.14.patch.kmax-6.14"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-6.14.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-6.14.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0009-linux-6.15.patch.kmax-6.15"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-6.15.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-6.15.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0010-linux-6.17.patch.kmax-6.17"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-6.17.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-6.17.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0011-linux-6.19-part1.patch.kmax-6.19"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-6.19-part1.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-6.19-part1.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0012-linux-6.19-part2.patch.kmax-6.19"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-6.19-part2.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-6.19-part2.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0013-linux-7.0.patch.kmax-7.0"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-7.0.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-7.0.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0014-linux-7.2-part1.patch.kmax-7.2"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-7.2-part1.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-7.2-part1.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0015-linux-7.2-part2.patch.kmax-7.2"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-7.2-part2.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-7.2-part2.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0016-linux-7.2-part3.patch.kmax-7.2"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-7.2-part3.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-7.2-part3.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0017-linux-7.3.patch.kmax-7.3"
+from="aur-470"
+origin_path="nvidia-470xx-fix-linux-7.3.patch"
+origin_commit="master@import-2026-09"
+fixes="nvidia-470xx-fix-linux-7.3.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0018-enable-drm-modeset-by-default.patch"
+from="aur-470"
+origin_path="enable-drm-modeset-by-default.patch"
+origin_commit="master@import-2026-09"
+fixes="enable-drm-modeset-by-default.patch"
+license="build-fix"
+
+[[patch]]
+file = "kernel/0019-add-linux-version-h.patch.kmax-6.0"
+from="nvidia-legacy"
+fixes="<linux/version.h>"
+license="trivial"
