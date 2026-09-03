@@ -1,32 +1,49 @@
 #!/bin/sh
 # build-prebuilt-module.sh <payload-dir> <dkms-name> <version>
-# Used by the `modules` flavour: compile the .ko set against the kernel headers
-# present in the build chroot, then stage them for the per-ABI binary package.
-#
-# The OBS/sbuild chroot for the `modules` flavour installs exactly one
-# linux-headers-<ABI> package; KVER is derived from it. render-debian.py emits
-# one source package per ABI, so this runs once per ABI.
+# `modules` flavour: compile the .ko set against the single linux-headers-<ABI>
+# package the build chroot installed, then stage it for the per-ABI binary
+# package. render/gen-kernel-packages emit one source package per ABI, so this
+# runs once per ABI.
 set -eu
 PAYLOAD="$1"; NAME="$2"; VER="$3"
 
-KVER="$(ls -1 /lib/modules/ | sort -V | tail -1)"
+# the chroot has exactly one kernel headers tree
+KVER="$(ls -1 /lib/modules/ 2>/dev/null | sort -V | tail -1)"
 KSRC="/lib/modules/$KVER/build"
-[ -d "$KSRC" ] || { echo "no kernel headers in chroot"; exit 1; }
+[ -n "$KVER" ] && [ -d "$KSRC" ] || { echo "no kernel headers in chroot"; exit 1; }
+echo "build-prebuilt-module.sh: KVER=$KVER"
 
 STAGE="debian/tmp/lib/modules/$KVER/updates/dkms"
 install -d "$STAGE"
 
 BUILD="$(mktemp -d)"
-cp -a "$PAYLOAD/kernel/." "$BUILD/"
-for p in $(ls debian/patches/kernel/*.patch debian/patches/build/*.patch 2>/dev/null | sort); do
-  echo "  module-patch $p"
-  patch -d "$BUILD" -p1 --no-backup-if-mismatch < "$p"
+# modular layout (390/470/580) ships kernel/; flat legacy (340/304/17x) may ship
+# kernel/ or usr/src/nv
+SRCD=kernel
+[ -d "$PAYLOAD/$SRCD" ] || SRCD="$(test -d "$PAYLOAD/usr/src/nv" && echo usr/src/nv || echo kernel)"
+cp -a "$PAYLOAD/$SRCD/." "$BUILD/"
+
+for p in $(ls debian/patches/kernel/*.patch* debian/patches/build/*.patch* 2>/dev/null | sort -V); do
+  echo "  module-patch $(basename "$p")"
+  patch -d "$BUILD" -p1 --forward --no-backup-if-mismatch -F3 -r /dev/null < "$p" || test $? -le 1
 done
 
-make -C "$BUILD" -j"$(nproc)" KERNEL_UNAME="$KVER" SYSSRC="$KSRC" modules
+# GLVND/modular kernel/Makefile has a `modules` target; flat legacy has singular
+# `module` (+ maybe uvm/). IGNORE_PREEMPT_RT_PRESENCE=1: build on RT too.
+MK="IGNORE_PREEMPT_RT_PRESENCE=1 KERNEL_UNAME=$KVER SYSSRC=$KSRC"
+if grep -qE '^modules:' "$BUILD/Makefile" 2>/dev/null; then
+  make -C "$BUILD" -j"$(nproc)" $MK modules
+else
+  make -C "$BUILD" -j"$(nproc)" $MK module
+  [ -d "$BUILD/uvm" ] && make -C "$BUILD/uvm" $MK \
+    KBUILD_EXTMOD="$BUILD/uvm" module || true
+fi
+
+n=0
 for ko in nvidia nvidia-modeset nvidia-drm nvidia-uvm; do
-  [ -f "$BUILD/$ko.ko" ] && install -m 0644 "$BUILD/$ko.ko" "$STAGE/$ko.ko" || echo "  (no $ko.ko)"
+  f="$(find "$BUILD" -name "$ko.ko" -print -quit 2>/dev/null || true)"
+  if [ -n "$f" ]; then install -m0644 "$f" "$STAGE/$ko.ko"; n=$((n+1)); else echo "  (no $ko.ko)"; fi
 done
-# record the ABI so the .install file / dh_gencontrol substvar can pick it up
+[ "$n" -gt 0 ] || { echo "no .ko built"; exit 1; }
 echo "$KVER" > debian/kver.stamp
-echo "build-prebuilt-module.sh: staged modules for $KVER"
+echo "build-prebuilt-module.sh: staged $n module(s) for $KVER"

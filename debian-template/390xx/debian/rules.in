@@ -23,7 +23,11 @@ SP    := $(EMPTY) $(EMPTY)
 PRIV_LIBDIRS := $(subst $(SP),:,$(strip $(foreach p,$(shell dh_listpackages),$(CURDIR)/debian/$(p)/usr/lib/$(DEB_HOST_MULTIARCH))))
 
 %:
+%if dkms
 	dh $@ --with dkms
+%else
+	dh $@
+%endif
 
 override_dh_auto_configure:
 	# nothing to ./configure — the payload is prebuilt userspace + module sources
