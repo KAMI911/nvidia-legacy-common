@@ -7,12 +7,20 @@ This tracks the **kernel module** compile against modern kernels — the harder 
 |---|---|---|---|
 | 580xx / 580xx-open | none needed (active upstream) | 6.16 | — (needs a real header set to confirm) |
 | 470xx | joanbm / AUR nvidia-470xx-utils (to 7.3) | not yet imported | import + gate |
-| 390xx | megvadulthangya nvidia-390xx-utils 0001–0021 (imported) | **fails on 6.12** | conftest: `#error kmem_cache_create() conftest failed!` + `nv_stdarg.h: stdarg.h: No such file` — the conftest compile picks the wrong `LINUX_VERSION_CODE` branch. Likely a patch-order / `conftest.sh` include-path issue. See below. |
+| 390xx | megvadulthangya 0001–0021 + **0022-add-linux-version-h** | **✅ builds on 6.12** — nvidia{,-modeset,-drm,-uvm}.ko all link clean (verified in debian:trixie / kernel 6.12.107 / gcc-14). Runtime still needs a Fermi/Kepler card. |
 | 340xx | megvadulthangya nvidia-340xx (per-kernel PKGBUILDs) | not yet imported | import + gate |
 | 304xx | flydiscohuebr/nvidia-304 (held in _needs-build-test) | ~7.0 once re-homed | strip-level fix |
 | 173/96/71xx | forward-port track (roadmap only) | — | see forward-port-status/ |
 
-## 390xx / Linux 6.12 — what to fix next
+## 390xx / Linux 6.12 — SOLVED
+
+The blocker was 4 files (`nvidia-modeset-linux.c`, `nvidia/os-interface.c`,
+`nvidia/nvlink_linux.c`, `nvidia-uvm/uvm_linux.h`) using `LINUX_VERSION_CODE`
+without `#include <linux/version.h>` — fatal under `-Werror=undef` on 6.x.
+`patches/390xx/kernel/0022-add-linux-version-h.patch.kmax-6.0` fixes it; the
+full 0001-0022 stack now yields a building module.
+
+### if it regresses / for the other series
 
 1. Apply the 20 patches **strictly** (`patch -Np1`, no `-F3` fuzz) in `sort -V`
    order into a fresh `kernel/` tree and confirm each applies with zero offset.
