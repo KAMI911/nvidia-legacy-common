@@ -1,0 +1,8 @@
+# 340.108 on Linux 6.x: add <linux/version.h> to files using LINUX_VERSION_CODE.
+--- a/os-interface.c
++++ b/os-interface.c
+@@ -13,6 +13,7 @@
+ 
+ #include "os-interface.h"
+ #include "nv-linux.h"
++#include <linux/version.h>
