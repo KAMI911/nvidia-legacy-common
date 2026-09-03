@@ -17,7 +17,7 @@ Build-Depends:
  libx11-6, libxext6, libxv1, libxrandr2, libxrender1, libxfixes3, libxi6,
  libgl1, libglx0, libglvnd0,
  libwayland-client0, libwayland-server0,
- libpciaccess0, libxvmc1, libvdpau1,
+ libpciaccess0, libxvmc1, libvdpau1, libgbm1,
  libxcb1, libxcb-glx0, libxcb-dri2-0, libxcb-dri3-0, libxcb-present0,
  libxdamage1, libxshmfence1, libxcursor1, libxinerama1,
 # nvidia-settings' bundled GTK backends (libnvidia-gtk2/3)
