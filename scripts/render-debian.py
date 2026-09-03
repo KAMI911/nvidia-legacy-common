@@ -108,6 +108,13 @@ def load_cfg(series: str, target: str) -> dict:
             "vdpau": s.get("provides_vdpau", True),
             "insecure": series in ("340xx", "304xx", "173xx", "96xx", "71xx"),
             "open_module": s.get("module_source") == "kernel-open",
+            # flat legacy module layout (kernel/Makefile: singular `module`
+            # target, one nvidia.ko) vs. modular (390/470/580: `modules` target,
+            # nvidia{,-modeset,-drm,-uvm}). 340 additionally ships a uvm/ subdir.
+            "flat_module": s.get("module_layout",
+                                 "flat" if series in ("340xx", "304xx", "173xx", "96xx", "71xx")
+                                 else "modular") == "flat",
+            "module_uvm": series == "340xx",
         },
         "_sde": source_date_epoch(),
     }
