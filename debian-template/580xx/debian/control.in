@@ -94,7 +94,11 @@ Package: nvidia-legacy-@SERIES@-driver-libs
 Architecture: @LIB_ARCHS@
 Multi-Arch: same
 Section: non-free/libs
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends:
+ ${misc:Depends}, ${shlibs:Depends},
+%if glvnd
+ libgl1, libglx0, libegl1,
+%endif
 Provides:
  nvidia-legacy-@SERIES@-driver-libs-nonglvnd,
  libgl1-nvidia-glx,

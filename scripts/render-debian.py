@@ -98,6 +98,11 @@ def load_cfg(series: str, target: str) -> dict:
             "best_effort": best_effort,
             "i386_kernel": "i386" in kernel_archs,
             "egl": s["provides_egl"],
+            # GLVND driver (ships libGLX_nvidia + relies on the system libglvnd
+            # for the libGL/libGLX/libEGL dispatch libs) vs. pre-GLVND (304/340/
+            # 17x: ships its own libGL.so.N). The provides_egl split matches the
+            # GLVND split exactly for every current series.
+            "glvnd": s.get("glvnd", s["provides_egl"]),
             "vulkan": s["provides_vulkan"],
             "nvenc": s["provides_nvenc"],
             "vdpau": s.get("provides_vdpau", True),

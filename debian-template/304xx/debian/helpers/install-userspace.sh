@@ -33,6 +33,16 @@ soname() {   # echo the DT_SONAME of $1, or empty
   ${OBJDUMP:-objdump} -p "$1" 2>/dev/null | awk '/SONAME/{print $2; exit}'
 }
 
+# GLVND driver? It ships libGLX_nvidia.so.* (the vendor implementation). On such
+# a driver the bundled libGL/libGLX/libEGL/libGLESv* and libGLdispatch/libOpenGL
+# are just NVIDIA's private copy of libglvnd — Debian and Ubuntu always provide
+# the system libglvnd, so shipping them file-conflicts with libgl1/libglx0/
+# libegl1. Pre-GLVND series (304/340/17x) ship their own libGL.so.N: keep it.
+GLVND=0
+for f in "$PAYLOAD_LIBS"/libGLX_nvidia.so.*; do
+  [ -e "$f" ] && { GLVND=1; break; }
+done
+
 # --- shared objects: every versioned .so the payload ships ------------------
 # NB: a runtime driver package ships libfoo.so.VER and the SONAME link
 # libfoo.so.N — but NOT the bare libfoo.so (that is a -dev symlink).
@@ -40,7 +50,10 @@ for so in "$PAYLOAD_LIBS"/*.so."$VER" "$PAYLOAD_LIBS"/*.so.[0-9]*; do
   [ -e "$so" ] || continue
   b="$(basename "$so")"
   case "$b" in
-    tls_test_dso.so|*_test_*.so|libvdpau.so.*|libvdpau_trace.so.*|libnvidia-pkcs11.so.*|libGLdispatch.so.*|libOpenGL.so.*) continue ;;
+    tls_test_dso.so|*_test_*.so|libvdpau.so.*|libvdpau_trace.so.*|libnvidia-pkcs11.so.*|libGLdispatch.so.*|libOpenGL.so.*|libOpenCL.so.*) continue ;;
+    libGL.so.*|libGLX.so.*|libEGL.so.*|libGLESv1_CM.so.*|libGLESv2.so.*)
+      # GLVND dispatch libs — ship only when the driver has no libGLX_nvidia
+      if [ "$GLVND" = 1 ]; then continue; fi ;;
     nvidia_drv.so)
       [ "$LIBS_ONLY" = 1 ] && continue
       install -m0644 "$so" "$DEST/usr/lib/xorg/modules/drivers/$b"; continue ;;
