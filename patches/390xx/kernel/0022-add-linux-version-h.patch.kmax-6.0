@@ -1,0 +1,46 @@
+# 390.157 on Linux 6.12+: several files use LINUX_VERSION_CODE / KERNEL_VERSION
+# without including <linux/version.h> (older kernels pulled it in transitively).
+# With -Werror=undef this is fatal, e.g.:
+#   nvidia-modeset-linux.c:183: error: "LINUX_VERSION_CODE" is not defined
+# (hangya's kernel-7.2 patch adds such a check to that file without the include).
+# from: nvidia-legacy build fix; license: trivial build shim
+--- a/nvidia/nvlink_linux.c
++++ b/nvidia/nvlink_linux.c
+@@ -22,6 +22,7 @@
+ *******************************************************************************/
+
+ #include "conftest.h"
++#include <linux/version.h>
+
+ #include "nvlink_common.h"
+ #include "nvlink_linux.h"
+--- a/nvidia/os-interface.c
++++ b/nvidia/os-interface.c
+@@ -9,6 +9,7 @@
+  */
+
+ #define  __NO_VERSION__
++#include <linux/version.h>
+ #include "nv-misc.h"
+
+ #include "os-interface.h"
+--- a/nvidia-modeset/nvidia-modeset-linux.c
++++ b/nvidia-modeset/nvidia-modeset-linux.c
+@@ -11,6 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
++#include <linux/version.h>
+ #include <linux/string.h>
+ #include <linux/delay.h>
+ #include <linux/vmalloc.h>
+--- a/nvidia-uvm/uvm_linux.h
++++ b/nvidia-uvm/uvm_linux.h
+@@ -30,6 +30,7 @@
+
+ #ifndef _UVM_LINUX_H
+ #define _UVM_LINUX_H
++#include <linux/version.h>
+
+ #include "nvtypes.h"
+

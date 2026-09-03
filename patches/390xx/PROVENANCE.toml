@@ -184,3 +184,9 @@ origin_path = "CFLAGS-Set-std-gnu17-for-all-compilation-flags.patch"
 origin_commit = "master@import-2026-09"
 fixes = "CFLAGS-Set-std-gnu17-for-all-compilation-flags"
 license = "build-fix / no explicit licence"
+
+[[patch]]
+file = "kernel/0022-add-linux-version-h.patch.kmax-6.0"
+from = "nvidia-legacy"
+fixes = "add <linux/version.h> to files using LINUX_VERSION_CODE without it (-Werror=undef on 6.x)"
+license = "trivial build shim"
