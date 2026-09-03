@@ -3,6 +3,22 @@
 The userspace + packaging is green for every series (smoke-build, reprotest).
 This tracks the **kernel module** compile against modern kernels — the harder half.
 
+**Userspace note (GLVND):** 390/470/580 are GLVND drivers — the packaging no
+longer ships the `.run`'s bundled `libGL/libGLX/libEGL/libGLESv*` +
+`libGLdispatch`/`libOpenGL` (they file-conflict with the system libglvnd);
+`-driver-libs` `Depends: libgl1, libglx0, libegl1`. 304/340/17x are pre-GLVND
+and keep their own `libGL.so.N`. Detection is by `libGLX_nvidia.so.*` in the
+payload (`install-userspace.sh`).
+
+## Non-blocking kernel coverage
+
+| Kernel | 390xx | Note |
+|---|---|---|
+| debian13 generic 6.12 | ✅ (ci gate) | dkms build + depmod clean |
+| debian13 686-pae 6.12 (i386) | ✅ (smoke) | |
+| debian13 **rt** 6.12 | ❌ non-blocking | `make` exit 2; make.log not yet captured on the deb-install path (fixed in tests/dkms-matrix/_in-container.sh — rerun to see the error). Likely a PREEMPT_RT spinlock/IRQ-API difference. |
+| mainline sweep 6.13–6.19 | tracked in kernels.yaml (non-blocking) | |
+
 | Series | Patch set | Builds on | Blocker |
 |---|---|---|---|
 | 580xx / 580xx-open | none needed (active upstream) | 6.16 | not yet compile-tested here |
