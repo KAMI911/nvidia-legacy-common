@@ -5,10 +5,10 @@ This tracks the **kernel module** compile against modern kernels — the harder 
 
 | Series | Patch set | Builds on | Blocker |
 |---|---|---|---|
-| 580xx / 580xx-open | none needed (active upstream) | 6.16 | — (needs a real header set to confirm) |
-| 470xx | joanbm / AUR nvidia-470xx-utils (to 7.3) | not yet imported | import + gate |
+| 580xx / 580xx-open | none needed (active upstream) | 6.16 | not yet compile-tested here |
+| 470xx | AUR nvidia-470xx-utils 0001-0018 (imported) | **✅ builds on 6.12** — nvidia{,-drm,-modeset,-uvm,-peermem}.ko link clean |
 | 390xx | megvadulthangya 0001–0021 + **0022-add-linux-version-h** | **✅ builds on 6.12** — nvidia{,-modeset,-drm,-uvm}.ko all link clean (verified in debian:trixie / kernel 6.12.107 / gcc-14). Runtime still needs a Fermi/Kepler card. |
-| 340xx | megvadulthangya nvidia-340xx (per-kernel PKGBUILDs) | not yet imported | import + gate |
+| 340xx | AUR nvidia-340xx 0001-0019 + version.h (imported) | **✅ builds on 6.12** — nvidia.ko links (warnings only) |
 | 304xx | flydiscohuebr/nvidia-304 (held in _needs-build-test) | ~7.0 once re-homed | strip-level fix |
 | 173/96/71xx | forward-port track (roadmap only) | — | see forward-port-status/ |
 
