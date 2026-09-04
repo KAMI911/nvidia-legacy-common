@@ -74,6 +74,18 @@ for j in nvidia_icd.json nvidia_icd.json.template nvidia_layers.json; do
   [ -e "$PAYLOAD/$j" ] && install -D -m0644 "$PAYLOAD/$j" \
     "$DEST/usr/share/vulkan/icd.d/${j%.template}" || true
 done
+# per-platform GLVND EGL vendor entries (Wayland/GBM/Xlib/XCB) — 10_nvidia.json
+# above only covers the default platform; without these, EGL clients that
+# request a specific platform never find the NVIDIA implementation even
+# though libnvidia-egl-{wayland,gbm,xlib,xcb}.so.* are staged by the loop above.
+for j in 10_nvidia_wayland.json 15_nvidia_gbm.json 20_nvidia_xlib.json 20_nvidia_xcb.json; do
+  [ -e "$PAYLOAD/$j" ] && install -D -m0644 "$PAYLOAD/$j" \
+    "$DEST/usr/share/glvnd/egl_vendor.d/$j" || true
+done
+# OpenCL ICD registration: libnvidia-opencl.so.* is already staged by the loop
+# above, but without this the system OpenCL loader (ocl-icd) never finds it.
+[ -e "$PAYLOAD/nvidia.icd" ] && install -D -m0644 "$PAYLOAD/nvidia.icd" \
+  "$DEST/etc/OpenCL/vendors/nvidia.icd" || true
 for L in LICENSE NVIDIA_Changelog README.txt; do
   [ -e "$PAYLOAD/$L" ] && install -D -m0644 "$PAYLOAD/$L" \
     "$DEST/usr/share/doc/nvidia-legacy-driver-libs/$L" || true
