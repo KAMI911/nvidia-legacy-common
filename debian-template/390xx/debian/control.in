@@ -131,7 +131,7 @@ Architecture: all
 Section: non-free/kernel
 Depends: ${misc:Depends}, dkms (>= 3.0.3)
 Recommends: nvidia-legacy-@SERIES@-driver-libs
-Provides: nvidia-legacy-@SERIES@-kernel-MODULE
+Provides: nvidia-legacy-@SERIES@-kernel-modules
 Description: NVIDIA legacy @VERSION@ driver — DKMS kernel module source
  DKMS source for the nvidia, nvidia-modeset, nvidia-drm and nvidia-uvm kernel
  modules from the @VERSION@ release. Rebuilt automatically for every installed
