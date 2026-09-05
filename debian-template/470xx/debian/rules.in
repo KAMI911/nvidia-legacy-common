@@ -85,7 +85,7 @@ override_dh_shlibdeps:
 	  -l$(PRIV_LIBDIRS) \
 	  -Xnvidia_drv.so -Xlibglxserver_nvidia \
 	  -Xlibnvidia-egl-wayland -Xlibnvidia-egl-gbm -Xlibnvidia-egl-xlib -Xlibnvidia-egl-xcb -Xlibnvidia-vulkan-producer \
-	  -Xlibnvidia-pkcs11 -Xlibnvidia-ngx -Xlibnvidia-vksc \
+	  -Xlibnvidia-pkcs11 -Xlibnvidia-ngx -Xlibnvidia-vksc -Xlibnvidia-gtk2 -Xlibnvidia-gtk3 \
 	  -- --ignore-missing-info \
 	     --warnings=0
 
