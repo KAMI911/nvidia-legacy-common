@@ -4,7 +4,6 @@ Priority: optional
 Maintainer: nvidia-legacy CI <ci@nvidia-legacy.invalid>
 Build-Depends:
  debhelper-compat (= @DH_COMPAT@),
- dkms (>= 2.8),
  dpkg-dev,
  binutils,
 %if modules

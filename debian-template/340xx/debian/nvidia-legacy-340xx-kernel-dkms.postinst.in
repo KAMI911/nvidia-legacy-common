@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        dkms add -m @DKMS_NAME@ -v @DKMS_VERSION@ --rpm_safe_upgrade || true
+        ;;
+esac
+
+#DEBHELPER#
+exit 0

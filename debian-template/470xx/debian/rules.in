@@ -23,11 +23,7 @@ SP    := $(EMPTY) $(EMPTY)
 PRIV_LIBDIRS := $(subst $(SP),:,$(strip $(foreach p,$(shell dh_listpackages),$(CURDIR)/debian/$(p)/usr/lib/$(DEB_HOST_MULTIARCH))))
 
 %:
-%if dkms
-	dh $@ --with dkms
-%else
 	dh $@
-%endif
 
 override_dh_auto_configure:
 	# nothing to ./configure — the payload is prebuilt userspace + module sources
@@ -52,15 +48,13 @@ override_dh_auto_install:
 	  for p in `ls -1 $(CURDIR)/debian/patches/kernel/*.patch* 2>/dev/null | sort -V`; do \
 	    echo "  dkms-patch $$p"; patch -p1 --forward --no-backup-if-mismatch -F3 -r /dev/null < "$$p" || test $$? -le 1; \
 	  done
+	# real dkms.conf DKMS itself reads on the target (was staged by dh_dkms;
+	# we call `dkms add`/`dkms remove` ourselves from postinst/prerm instead)
+	install -m0644 debian/nvidia-legacy-$(SERIES)-kernel-dkms.dkms $(DKMS_SRC)/dkms.conf
 %endif
 %if modules
 	# --- prebuilt module: compiled by dh_dkms against the build chroot kernel
 	debian/helpers/build-prebuilt-module.sh "$(PAYLOAD)" "$(DKMS_NAME)" "$(VERSION)"
-%endif
-
-override_dh_dkms:
-%if dkms
-	dh_dkms -V $(VERSION)
 %endif
 
 execute_after_dh_fixperms:
