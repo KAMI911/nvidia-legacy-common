@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|deconfigure)
+        dkms remove -m @DKMS_NAME@ -v @DKMS_VERSION@ --all || true
+        ;;
+esac
+
+#DEBHELPER#
+exit 0
