@@ -3,7 +3,8 @@
 alias char-major-195* nvidia
 alias nvidia-current nvidia
 options nvidia NVreg_DeviceFileMode=0660 NVreg_DeviceFileGID=44
-# nvidia-drm modeset: keep OFF for legacy series unless the user opts in; the
-# legacy KMS path is fragile on modern kernels.
-options nvidia-drm modeset=0
+# nvidia-drm modeset=1: KMS is stable on this series (Maxwell/Pascal/Volta+,
+# open kernel modules) and required for Wayland/GBM. Override in a
+# higher-priority modprobe.d file to disable.
+options nvidia-drm modeset=1
 softdep nvidia post: nvidia-modeset nvidia-uvm
