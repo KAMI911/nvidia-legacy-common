@@ -124,7 +124,7 @@ Description: NVIDIA legacy @VERSION@ driver — kernel/X integration glue
 Package: nvidia-legacy-@SERIES@-kernel-dkms
 Architecture: all
 Section: non-free/kernel
-Depends: ${misc:Depends}, dkms (>= 3.0.3)
+Depends: ${misc:Depends}, dkms (>= 2.8)
 Recommends: nvidia-legacy-@SERIES@-driver-libs
 Provides: nvidia-legacy-@SERIES@-kernel-modules
 Description: NVIDIA legacy @VERSION@ driver — DKMS kernel module source
