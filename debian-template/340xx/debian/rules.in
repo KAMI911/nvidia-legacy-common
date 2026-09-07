@@ -74,12 +74,16 @@ override_dh_makeshlibs:
 
 override_dh_shlibdeps:
 	# let dpkg-shlibdeps resolve the inter-NVIDIA SONAMEs (libnvidia-*, libcuda,
-	# libnvcuvid, libGLX_nvidia ...) against our own just-staged packages
+	# libnvcuvid, libGLX_nvidia ...) against our own just-staged packages.
+	# nvidia-settings on this series links GTK2 directly (pre-dates the
+	# dlopen-plugin split newer drivers use); GTK2 is gone from trixie/
+	# noble+, so exclude it too rather than fail the build there.
 	dh_shlibdeps \
 	  -l$(PRIV_LIBDIRS) \
 	  -Xnvidia_drv.so -Xlibglxserver_nvidia \
 	  -Xlibnvidia-egl-wayland -Xlibnvidia-egl-gbm -Xlibnvidia-egl-xlib -Xlibnvidia-egl-xcb -Xlibnvidia-vulkan-producer \
 	  -Xlibnvidia-pkcs11 -Xlibnvidia-ngx -Xlibnvidia-vksc -Xlibnvidia-gtk2 -Xlibnvidia-gtk3 \
+	  -Xnvidia-settings \
 	  -- --ignore-missing-info \
 	     --warnings=0
 
