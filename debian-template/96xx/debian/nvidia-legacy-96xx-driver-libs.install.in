@@ -5,5 +5,7 @@ usr/share/glvnd/egl_vendor.d/*
 %if vulkan
 usr/share/vulkan/icd.d/*
 %endif
+%if opencl
 etc/OpenCL/vendors/*
+%endif
 usr/share/doc/nvidia-legacy-driver-libs/*

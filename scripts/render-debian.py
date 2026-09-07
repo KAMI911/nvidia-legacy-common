@@ -107,6 +107,7 @@ def load_cfg(series: str, target: str) -> dict:
             "vulkan": s["provides_vulkan"],
             "nvenc": s["provides_nvenc"],
             "vdpau": s.get("provides_vdpau", True),
+            "opencl": s.get("provides_opencl", True),
             "insecure": series in ("340xx", "304xx", "173xx", "96xx", "71xx"),
             "open_module": s.get("module_source") == "kernel-open",
             # flat legacy module layout (kernel/Makefile: singular `module`
