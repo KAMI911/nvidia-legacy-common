@@ -100,6 +100,14 @@ Provides:
  vdpau-driver,
 %endif
  libglx-nvidia,
+%if glvnd
+%else
+# this series ships its own libGL.so.N / libEGL.so.N directly (pre-GLVND;
+# no libnvidia-gtk2/gtk3-style dlopen split, no glvnd dispatch layer) --
+# those paths are also owned by the distro's real libgl1/libegl1, so the
+# two can never coexist on the same system.
+Conflicts: libgl1, libegl1
+%endif
 Description: NVIDIA legacy @VERSION@ driver — runtime libraries
  Every shared library from the NVIDIA @VERSION@ userspace: libGL / libGLX_nvidia
  / libEGL_nvidia, libnvidia-glcore, libnvidia-tls, libnvidia-eglcore,
