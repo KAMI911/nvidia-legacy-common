@@ -157,3 +157,9 @@ file = "kernel/0019-add-linux-version-h.patch.kmax-6.0"
 from="nvidia-legacy"
 fixes="<linux/version.h>"
 license="trivial"
+
+[[patch]]
+file = "kernel/0020-fix-timer-delete-sync-guard.patch"
+from="nvidia-legacy"
+fixes="0009-linux-6.15 fallout: timer_delete_sync shim in common/inc/nv-timer.h redeclared non-static on distro kernels that backport it (e.g. Ubuntu -generic point releases); replaced LINUX_VERSION_CODE guard with a real conftest.sh probe"
+license="build-fix"
