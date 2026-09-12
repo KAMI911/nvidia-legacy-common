@@ -59,7 +59,7 @@ for kv in $kernels; do
   log "=== $series vs Linux $kv (patched=$PATCHED) ==="
   res="$("$COMMON_ROOT/scripts/_compile-one.sh" "$series" "$kv" "$PATCHED" 2>&1 || true)"
   status="$(printf '%s' "$res" | tail -1)"
-  err="$(printf '%s' "$res" | grep -E 'error:|undefined|no member|implicit declaration' | head -1 | cut -c1-120 | tr '|' '/')"
+  err="$(printf '%s' "$res" | grep -E 'error:|undefined|no member|implicit declaration' | head -1 | cut -c1-120 | tr '|' '/' || true)"
   case "$status" in
     OK) echo "| $kv | ✅ | |" >> "$out"; log "  OK" ;;
     SKIP) echo "| $kv | ⚠️ skip (no headers) | |" >> "$out" ;;
