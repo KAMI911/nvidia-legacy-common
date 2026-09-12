@@ -1,0 +1,92 @@
+--- a/nv-linux.h
++++ b/nv-linux.h
+@@ -2303,6 +2303,13 @@
+ #endif
+ #endif
+ 
++// vm_flags_set()/vm_flags_clear() themselves only exist from Linux 6.3, so
++// these helpers -- and their call sites in nv-mmap.c/nvidia_uvm_lite.c --
++// are gated the same way; on < 6.3 nothing here is ever called, but the
++// *definitions* were still being compiled unconditionally, which fails with
++// "implicit declaration of function 'vm_flags_clear'" under -Werror on any
++// pre-6.3 kernel.
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+ static inline void nv_vm_flags_set(struct vm_area_struct *vma, vm_flags_t flags)
+ {
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
+@@ -2328,10 +2335,16 @@
+     vm_flags_clear(vma, flags);
+ #endif
+ }
++#endif /* >= 6.3 */
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+ // Rel. commit "treewide: Switch/rename to timer_delete[_sync]()" (Thomas Gleixner, 5 Apr 2025)
+-// This provides a shim for ancient kernels before timer_delete_sync was introduced
++// This provides a shim for kernels before timer_delete_sync was introduced.
++// NV_TIMER_DELETE_SYNC_PRESENT comes from a real conftest.sh compile probe
++// rather than LINUX_VERSION_CODE, because distro kernels (e.g. Ubuntu's
++// -generic point releases) commonly backport this symbol into an
++// otherwise-old kernel, and a version-only guard redeclares it non-static,
++// which is also a hard compile error.
++#if !defined(NV_TIMER_DELETE_SYNC_PRESENT)
+ static inline int timer_delete_sync(struct timer_list *timer)
+ {
+     return del_timer_sync(timer);
+--- a/uvm/nvidia_uvm_linux.h
++++ b/uvm/nvidia_uvm_linux.h
+@@ -451,6 +451,9 @@
+ }
+ #endif
+ 
++// vm_flags_set()/vm_flags_clear() themselves only exist from Linux 6.3; see
++// the matching comment in nv-linux.h.
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+ static inline void nv_vm_flags_set(struct vm_area_struct *vma, vm_flags_t flags)
+ {
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 15, 0)
+@@ -476,6 +479,7 @@
+     vm_flags_clear(vma, flags);
+ #endif
+ }
++#endif /* >= 6.3 */
+ 
+ #endif // _NVIDIA_UVM_LINUX_H
+ 
+--- a/conftest.sh
++++ b/conftest.sh
+@@ -2200,6 +2200,24 @@
+             compile_check_conftest "$CODE" "NV_TIMER_SETUP_PRESENT" "" "functions"
+         ;;
+ 
++        timer_delete_sync)
++            #
++            # Determine if the function timer_delete_sync() is present.
++            #
++            # timer_delete_sync() was added by the "treewide: Switch/rename
++            # to timer_delete[_sync]()" series (Thomas Gleixner, 2025-04-05),
++            # and distro kernels (e.g. Ubuntu -generic point releases) commonly
++            # backport it onto an otherwise-old base, so this must be a real
++            # compile probe rather than a LINUX_VERSION_CODE guard.
++            #
++            CODE="
++            #include <linux/timer.h>
++            int conftest_timer_delete_sync(void) {
++                return timer_delete_sync();
++            }"
++            compile_check_conftest "$CODE" "NV_TIMER_DELETE_SYNC_PRESENT" "" "functions"
++        ;;
++
+        do_gettimeofday)
+             #
+             # Determine if the function do_gettimeofday() is
+--- a/Makefile
++++ b/Makefile
+@@ -154,6 +154,7 @@
+ 	drm_pci_init \
+ 	drm_legacy_pci_init \
+ 	timer_setup \
++	timer_delete_sync \
+ 	do_gettimeofday \
+ 	drm_gem_object_put_unlocked \
+ 	drm_driver_legacy_feature_bit_present \
