@@ -1,0 +1,16 @@
+--- a/nvidia/nvidia.Kbuild
++++ b/nvidia/nvidia.Kbuild
+@@ -12,6 +12,13 @@
+ obj-m += nvidia.o
+ nvidia-y := $(NVIDIA_OBJECTS)
+ 
++# Some kernel configs (observed: Ubuntu noble's generic/lowlatency configs)
++# run objtool in strict mode against the built nvidia.o and fail on
++# "indirect jump found in MITIGATION_RETPOLINE build" for the closed-source
++# nv-kernel.o blob linked in below, which isn't objtool-clean. 340xx hit
++# and fixed the same class of failure the same way.
++nvidia.o: override objtool-enabled =
++
+ NVIDIA_KO = nvidia/nvidia.ko
+ 
+ 

@@ -196,3 +196,9 @@ file = "kernel/0023-fix-in-hardirq-guard.patch"
 from = "nvidia-legacy"
 fixes = "0019-kernel-6.19 fallout: in_irq() -> in_hardirq() rename applied unconditionally, but distro kernels (e.g. Ubuntu -generic point releases) commonly lack in_hardirq() well past kernels that have it upstream; added a real conftest.sh probe + compat #define instead"
 license = "build-fix"
+
+[[patch]]
+file = "kernel/0024-disable-objtool-nvidia-o.patch"
+from = "nvidia-legacy"
+fixes = "dkms build failure on Ubuntu noble generic/lowlatency (objtool: indirect jump found in MITIGATION_RETPOLINE build, on the closed nv-kernel.o blob linked into nvidia.o); same class of fix as 340xx's nvidia.o objtool-enabled override"
+license = "build-fix"
