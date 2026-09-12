@@ -35,7 +35,7 @@ for bucket in build kernel xorg; do
       (( tgt_abi >= BASH_REMATCH[1] )) || continue
     fi
     selected+=("$bucket/$b")
-  done < <(find "$pdir/$bucket" -maxdepth 1 -name '*.patch' | sort)
+  done < <(find "$pdir/$bucket" -maxdepth 1 -name '*.patch*' | sort)
 done
 
 log "$series/$target: ${#selected[@]} patch(es) selected"
