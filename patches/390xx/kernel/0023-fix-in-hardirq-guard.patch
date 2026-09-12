@@ -1,0 +1,67 @@
+--- a/nvidia/os-interface.c
++++ b/nvidia/os-interface.c
+@@ -20,6 +20,14 @@
+ 
+ #include <linux/hardirq.h>
+ 
++// in_hardirq() is the modern name for in_irq(); distro kernels (e.g.
++// Ubuntu -generic point releases) commonly lack it well past the kernels
++// that have it upstream, so this is a real conftest.sh probe rather than
++// a LINUX_VERSION_CODE guard.
++#if !defined(NV_IN_HARDIRQ_PRESENT)
++#define in_hardirq() in_irq()
++#endif
++
+ #define MAX_ERROR_STRING 512
+ static char nv_error_string[MAX_ERROR_STRING];
+ nv_spinlock_t nv_error_string_lock;
+--- a/nvidia/nvlink_linux.c
++++ b/nvidia/nvlink_linux.c
+@@ -33,6 +33,14 @@
+ #include "nv-time.h"
+ #include <linux/hardirq.h>
+ 
++// in_hardirq() is the modern name for in_irq(); distro kernels (e.g.
++// Ubuntu -generic point releases) commonly lack it well past the kernels
++// that have it upstream, so this is a real conftest.sh probe rather than
++// a LINUX_VERSION_CODE guard.
++#if !defined(NV_IN_HARDIRQ_PRESENT)
++#define in_hardirq() in_irq()
++#endif
++
+ #define MAX_ERROR_STRING           512
+ 
+ #define NV_MAX_ISR_DELAY_US           20000
+--- a/nvidia/nvidia.Kbuild
++++ b/nvidia/nvidia.Kbuild
+@@ -222,3 +222,4 @@
+ NV_CONFTEST_GENERIC_COMPILE_TESTS += vm_fault_t
+ 
+ NV_CONFTEST_MACRO_COMPILE_TESTS += INIT_WORK
++NV_CONFTEST_FUNCTION_COMPILE_TESTS += in_hardirq
+--- a/conftest.sh
++++ b/conftest.sh
+@@ -3643,6 +3643,23 @@
+             compile_check_conftest "$CODE" "NV_TIMER_SETUP_PRESENT" "" "functions"
+         ;;
+ 
++        in_hardirq)
++            #
++            # Determine if in_hardirq() is present (the modern replacement
++            # for in_irq()). A wrong-arity call: if the real macro/function
++            # exists (it takes no arguments) this fails to compile, which
++            # compile_check_conftest's "functions" category treats as
++            # present; if absent, the implicit declaration this file
++            # already tolerates lets any argument count through.
++            #
++            CODE="
++            #include <linux/hardirq.h>
++            int conftest_in_hardirq(void) {
++                return in_hardirq(0);
++            }"
++            compile_check_conftest "$CODE" "NV_IN_HARDIRQ_PRESENT" "" "functions"
++        ;;
++
+         radix_tree_replace_slot)
+             #
+             # Determine if the radix_tree_replace_slot() function is
