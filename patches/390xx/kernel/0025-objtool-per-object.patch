@@ -1,0 +1,15 @@
+--- a/nvidia/nvidia.Kbuild
++++ b/nvidia/nvidia.Kbuild
+@@ -18,6 +18,12 @@
+ # nv-kernel.o blob linked in below, which isn't objtool-clean. 340xx hit
+ # and fixed the same class of failure the same way.
+ nvidia.o: override objtool-enabled =
++# The above only covers the final linked nvidia.o -- objtool also runs on
++# every individual object (e.g. nvidia/nv.o, compiled from this module's own
++# open-source .c files) before that link happens, and hits the same
++# "indirect jump found in MITIGATION_RETPOLINE build" failure there too.
++# Disable it for every object this Kbuild fragment builds.
++nvidia/%.o: override objtool-enabled =
+ 
+ NVIDIA_KO = nvidia/nvidia.ko
+ 
