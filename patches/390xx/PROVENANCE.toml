@@ -202,3 +202,9 @@ file = "kernel/0024-disable-objtool-nvidia-o.patch"
 from = "nvidia-legacy"
 fixes = "dkms build failure on Ubuntu noble generic/lowlatency (objtool: indirect jump found in MITIGATION_RETPOLINE build, on the closed nv-kernel.o blob linked into nvidia.o); same class of fix as 340xx's nvidia.o objtool-enabled override"
 license = "build-fix"
+
+[[patch]]
+file = "kernel/0025-objtool-per-object.patch"
+from = "nvidia-legacy"
+fixes = "0024 only disabled objtool on the final linked nvidia.o; objtool also runs on every individual object (e.g. nvidia/nv.o) before that link and hit the identical MITIGATION_RETPOLINE failure there -- confirmed still failing in CI after 0024 alone. Extends the override to every object this Kbuild fragment builds."
+license = "build-fix"
