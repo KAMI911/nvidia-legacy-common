@@ -208,3 +208,9 @@ file = "kernel/0025-objtool-per-object.patch"
 from = "nvidia-legacy"
 fixes = "0024 only disabled objtool on the final linked nvidia.o; objtool also runs on every individual object (e.g. nvidia/nv.o) before that link and hit the identical MITIGATION_RETPOLINE failure there -- confirmed still failing in CI after 0024 alone. Extends the override to every object this Kbuild fragment builds."
 license = "build-fix"
+
+[[patch]]
+file = "kernel/0026-objtool-real-fix.patch"
+from = "nvidia-legacy"
+fixes = "0024 and 0025's `override objtool-enabled =` does not actually disable objtool -- confirmed still failing identically in CI (and in a from-scratch local rebuild with the real no-SYSSRC build command) after both landed. Replaces them with OBJECT_FILES_NON_STANDARD := y, the real kernel-documented mechanism (scripts/Makefile.build). Verified locally: builds clean on the exact previously-failing kernel (ubuntu:24.04 + linux-headers-6.8.0-139-generic) with no regression on 5.4.0-200-generic."
+license = "build-fix"
