@@ -1,0 +1,40 @@
+--- a/nvidia/nvidia.Kbuild
++++ b/nvidia/nvidia.Kbuild
+@@ -12,18 +12,25 @@
+ obj-m += nvidia.o
+ nvidia-y := $(NVIDIA_OBJECTS)
+ 
+-# Some kernel configs (observed: Ubuntu noble's generic/lowlatency configs)
+-# run objtool in strict mode against the built nvidia.o and fail on
+-# "indirect jump found in MITIGATION_RETPOLINE build" for the closed-source
+-# nv-kernel.o blob linked in below, which isn't objtool-clean. 340xx hit
+-# and fixed the same class of failure the same way.
+-nvidia.o: override objtool-enabled =
+-# The above only covers the final linked nvidia.o -- objtool also runs on
+-# every individual object (e.g. nvidia/nv.o, compiled from this module's own
+-# open-source .c files) before that link happens, and hits the same
+-# "indirect jump found in MITIGATION_RETPOLINE build" failure there too.
+-# Disable it for every object this Kbuild fragment builds.
+-nvidia/%.o: override objtool-enabled =
++# Some kernel configs (observed: Ubuntu noble's generic/lowlatency/Azure
++# configs, and the mainline-sweep matrix) run objtool in strict mode and fail
++# on "indirect jump found in MITIGATION_RETPOLINE build" -- both on the
++# final linked nvidia.o (the closed-source nv-kernel.o blob linked into it
++# isn't objtool-clean) and on individual objects compiled from this
++# module's own open-source .c files (e.g. nvidia/nv.o), since objtool runs
++# per object before the final link too.
++#
++# 0024/0025's `override objtool-enabled =` does NOT actually disable
++# objtool -- confirmed still failing, identically, in CI and in a
++# from-scratch local rebuild after both patches had landed.
++# OBJECT_FILES_NON_STANDARD is the real, kernel-documented mechanism
++# (scripts/Makefile.build); the bare directory-wide form disables it for
++# every object this Kbuild fragment builds. Verified locally: builds clean
++# now on the exact kernel that was failing (ubuntu:24.04 + linux-headers-
++# 6.8.0-139-generic) using the real build command (KERNEL_UNAME only, no
++# SYSSRC, matching dkms.conf / build-prebuilt-module.sh), with no
++# regression on 5.4.0-200-generic.
++OBJECT_FILES_NON_STANDARD := y
+ 
+ NVIDIA_KO = nvidia/nvidia.ko
+ 
