@@ -172,3 +172,9 @@ file = "kernel/0021-fix-vm-flags-timer-delete-sync-guards.patch"
 from="nvidia-legacy"
 fixes="0019-kernel-6.15 fallout: nv_vm_flags_{set,clear} compiled unconditionally (implicit-decl on <6.3), timer_delete_sync shim redeclared non-static on distro kernels that backport it"
 license="build-fix"
+
+[[patch]]
+file = "kernel/0022-objtool-real-fix.patch"
+from="nvidia-legacy"
+fixes="0019-kernel-6.15's nvidia.o: override objtool-enabled = is not a real Kbuild override point (discovered on 390xx, where it left the objtool/retpoline failure unfixed); dead code here since 340xx doesn't currently hit that failure, replaced with OBJECT_FILES_NON_STANDARD on general correctness grounds"
+license="build-fix"
