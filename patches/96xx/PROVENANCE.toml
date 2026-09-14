@@ -57,3 +57,9 @@ license = "MIT (repo LICENSE)"
 # origin_commit = "<sha>"
 # fixes = "gcc 15 -Werror=implicit-int / incompatible-pointer-types in conftest"
 # license = "public-domain"
+
+[[patch]]
+file = "kernel/0001-fix-kbuild-subdirs-to-m.patch"
+from = "nvidia-legacy"
+fixes = "Makefile.kbuild's KBUILD_PARAMS used the deprecated SUBDIRS=$(PWD), which modern kbuild silently ignores, causing it to attempt a full in-tree kernel modules build (wanting arch/x86/tools/relocs_32.c, arch/x86/entry/syscalls/syscall_32.tbl etc. that a linux-headers-only package doesn't ship) instead of an external module build. M=$(PWD) is the modern equivalent. Confirmed this exact bug and fix on the sibling 173xx series (nvidia.ko actually built past this point there); 96xx itself hits an earlier, separate blocker (conftest.sh select_makefile: \"Unable to determine the target kernel version\") not yet investigated."
+license = "trivial build shim"
