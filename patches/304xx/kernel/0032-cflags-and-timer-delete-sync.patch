@@ -1,0 +1,69 @@
+diff -ru '--exclude=*.orig' '--exclude=*.rej' /tmp/claude-1000/-home-kami-git-kami911-nvidia-legacy/33c328df-64fb-4ba4-8a24-22b8ded55fed/scratchpad/304x-final-post31/kernel/conftest.sh /tmp/claude-1000/-home-kami-git-kami911-nvidia-legacy/33c328df-64fb-4ba4-8a24-22b8ded55fed/scratchpad/304x-final/NVIDIA-Linux-x86_64-304.137/kernel/conftest.sh
+--- a/conftest.sh	2026-09-14 14:24:57.028009346 +0200
++++ b/conftest.sh	2026-09-14 14:25:25.336590174 +0200
+@@ -340,6 +340,24 @@
+             fi
+         ;;
+ 
++        timer_delete_sync)
++            #
++            # Determine if the function timer_delete_sync() is present.
++            #
++            # timer_delete_sync() was added by the "treewide: Switch/rename
++            # to timer_delete[_sync]()" series (Thomas Gleixner, 2025-04-05),
++            # and distro kernels (e.g. Ubuntu -generic point releases)
++            # commonly backport it onto an otherwise-old base, so this must
++            # be a real compile probe rather than a LINUX_VERSION_CODE guard.
++            #
++            CODE="
++            #include <linux/timer.h>
++            int conftest_timer_delete_sync(void) {
++                return timer_delete_sync();
++            }"
++            compile_check_conftest "$CODE" "NV_TIMER_DELETE_SYNC_PRESENT" "" "functions"
++        ;;
++
+         set_memory_uc)
+             #
+             # Determine if the set_memory_uc() function is present.
+diff -ru '--exclude=*.orig' '--exclude=*.rej' /tmp/claude-1000/-home-kami-git-kami911-nvidia-legacy/33c328df-64fb-4ba4-8a24-22b8ded55fed/scratchpad/304x-final-post31/kernel/Makefile.kbuild /tmp/claude-1000/-home-kami-git-kami911-nvidia-legacy/33c328df-64fb-4ba4-8a24-22b8ded55fed/scratchpad/304x-final/NVIDIA-Linux-x86_64-304.137/kernel/Makefile.kbuild
+--- a/Makefile.kbuild	2026-09-14 14:24:57.023611826 +0200
++++ b/Makefile.kbuild	2026-09-14 14:25:32.403584367 +0200
+@@ -64,7 +64,7 @@
+ #
+ 
+ ccflags-y += -I$(src)
+-ccflags-y += -Wall -MD $(DEFINES) $(INCLUDES) -Wsign-compare -Wno-cast-qual -Wno-error
++ccflags-y += -Wall -MD $(DEFINES) $(INCLUDES) -Wno-sign-compare -Wno-cast-qual -Wno-error -Wno-declaration-after-statement -Wimplicit-fallthrough=0
+ 
+ #
+ # We rely on these two definitions below; if they aren't set, we set them to
+@@ -144,6 +144,7 @@
+ 
+ COMPILE_TESTS = \
+ 	remap_page_range \
++	timer_delete_sync \
+ 	remap_pfn_range \
+ 	vmap \
+ 	agp_backend_acquire \
+diff -ru '--exclude=*.orig' '--exclude=*.rej' /tmp/claude-1000/-home-kami-git-kami911-nvidia-legacy/33c328df-64fb-4ba4-8a24-22b8ded55fed/scratchpad/304x-final-post31/kernel/nv-linux.h /tmp/claude-1000/-home-kami-git-kami911-nvidia-legacy/33c328df-64fb-4ba4-8a24-22b8ded55fed/scratchpad/304x-final/NVIDIA-Linux-x86_64-304.137/kernel/nv-linux.h
+--- a/nv-linux.h	2026-09-14 14:24:57.028170282 +0200
++++ b/nv-linux.h	2026-09-14 14:25:16.111531645 +0200
+@@ -14,9 +14,15 @@
+ #include "nv.h"
+ #include "conftest.h"
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
++#include <linux/timer.h>
+ // Rel. commit "treewide: Switch/rename to timer_delete[_sync]()" (Thomas Gleixner, 5 Apr 2025)
+-// This provides a shim for ancient kernels before timer_delete_sync was introduced
++// This provides a shim for kernels before timer_delete_sync was introduced.
++// NV_TIMER_DELETE_SYNC_PRESENT comes from a real conftest.sh compile probe
++// rather than LINUX_VERSION_CODE, because distro kernels (e.g. Ubuntu's
++// -generic point releases) commonly backport this symbol into an
++// otherwise-old kernel, and a version-only guard redeclares it non-static,
++// which is also a hard compile error.
++#if !defined(NV_TIMER_DELETE_SYNC_PRESENT)
+ static inline int timer_delete_sync(struct timer_list *timer)
+ {
+     return del_timer_sync(timer);
