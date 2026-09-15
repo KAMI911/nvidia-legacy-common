@@ -57,3 +57,9 @@ license = "MIT (repo LICENSE)"
 # origin_commit = "<sha>"
 # fixes = "gcc 15 -Werror=implicit-int / incompatible-pointer-types in conftest"
 # license = "public-domain"
+
+[[patch]]
+file = "kernel/0001-fix-modeset-objtool.patch"
+from = "nvidia-legacy"
+fixes = "nvidia-modeset.ko's linked-in closed nv-modeset-kernel.o_binary blob isn't objtool-clean against Debian trixie's 6.12 kernel (RETHUNK mitigation: \"'naked' return found in MITIGATION_RETHUNK build\", ~30 warnings). Currently non-fatal (build still succeeds) but the identical warning class became a hard build failure for 390xx/470xx/304xx on a different kernel config (Ubuntu noble's stricter CONFIG_WERROR) -- fixed proactively with the same OBJECT_FILES_NON_STANDARD mechanism used there. Verified: warning count drops from ~30 to 0 on trixie, no regression on 5.4/noble."
+license = "trivial build shim"
