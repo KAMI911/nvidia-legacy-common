@@ -1,0 +1,21 @@
+--- a/nvidia-modules-common.mk
++++ b/nvidia-modules-common.mk
+@@ -307,7 +307,17 @@
+ # kernel interface is built.
+ #
+ 
+-nvidia.o: override objtool-enabled =
++# `override objtool-enabled =` (this used to be here) is not a real Kbuild
++# override point and silently no-ops -- discovered while chasing the same
++# "indirect jump found in MITIGATION_RETPOLINE build" objtool failure on
++# 390xx (390xx/nvidia.Kbuild), where it left the failure unfixed even after
++# landing. 340xx itself doesn't currently hit that failure (no retpoline
++# thunks show up building against Ubuntu noble), so this was dead code, not
++# an active bug -- replaced on general correctness grounds with
++# OBJECT_FILES_NON_STANDARD, the real kernel-documented mechanism
++# (scripts/Makefile.build), in case a future kernel/compiler combination
++# does trigger it here too.
++OBJECT_FILES_NON_STANDARD := y
+ 
+ $(KERNEL_GLUE_NAME): $(MODULE_OBJECT)
+ 	@$(LD) $(EXTRA_LDFLAGS) $(MODULE_COMMON_SCRIPT) -r -o $(KERNEL_GLUE_NAME) $(KERNEL_GLUE_OBJS)
