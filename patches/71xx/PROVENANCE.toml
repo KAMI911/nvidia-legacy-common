@@ -57,3 +57,9 @@ license = "MIT (repo LICENSE)"
 # origin_commit = "<sha>"
 # fixes = "gcc 15 -Werror=implicit-int / incompatible-pointer-types in conftest"
 # license = "public-domain"
+
+[[patch]]
+file = "kernel/0001-fix-kbuild-subdirs-to-m.patch"
+from = "nvidia-legacy"
+fixes = "Makefile.kbuild's KBUILD_PARAMS used the deprecated SUBDIRS=$(PWD), which modern kbuild silently ignores, causing it to attempt a full in-tree kernel modules build instead of an external module build (same bug as 96xx/173xx). M=$(PWD) is the modern equivalent. Confirmed this exact bug and fix on the sibling 173xx series; not independently build-verified for 71xx in this environment."
+license = "trivial build shim"

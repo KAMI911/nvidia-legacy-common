@@ -2,69 +2,101 @@
 # (struct timeval fully gone from kernel by 5.6). Convert to timespec64 +
 # ktime_get_real_ts64(), guarded so the same source still builds on < 5.0.
 #
-# Adapted from patches/304xx/kernel/0006-do_gettimeofday-5.0 (same os-interface.c
-# structure). 173 has no nv-drm.c, so that hunk is dropped. nv.h NV_TIMER* macros
-# switched to tv_nsec when timespec64 is in use.
+# Rewritten from an earlier hand-authored draft that had two real bugs:
+# malformed hunks (blank context lines missing their leading space, and
+# miscounted @@ headers -- "malformed patch" from `patch`) and wrong context
+# (it was adapted from 304xx's os-interface.c shape, which doesn't match
+# 173's actual source -- e.g. it missed the NV_CHECK_DELAY_ACCURACY debug
+# blocks in os_delay_us/os_delay entirely, including a timersub() call that
+# also needed converting to NV_TIMERSUB() since timersub() only accepts
+# struct timeval). This version was regenerated as a real `diff -u` against
+# the actual 173.14.39 source and applies cleanly (`patch -p1`).
 #
-# STATUS: DRAFT — reviewed against 173 source, NOT yet build-tested.
-# Applies to the flat legacy layout (paths relative to the module source root).
+# STATUS: content-reviewed and mechanically valid; NOT yet compile-tested.
+# 173's `usr/src/nv/makefile` needs a full kernel source tree to build
+# (arch/x86/tools/relocs_32.c, arch/x86/entry/syscalls/syscall_32.tbl,
+# tools/build/Build.include -- none of which ship in a linux-headers-only
+# package), unlike the modern series' Kbuild-based module builds, so this
+# couldn't be verified against a real kernel in this environment. That's a
+# separate, deeper 173/96/71-family build-infrastructure gap, not something
+# wrong with this patch's content.
 --- a/nv.h
 +++ b/nv.h
-@@ -390,6 +390,13 @@
- #endif
-
- /*
-+ * Linux 5.0 removed do_gettimeofday()/struct timeval from the kernel.
-+ * When we build against >= 5.0 the NV timers operate on timespec64 (tv_nsec).
+@@ -13,6 +13,7 @@
+ #define _NV_H_
+ 
+ #include <nvtypes.h>
++#include <linux/version.h>
+ 
+ #if !defined(NV_MIN)
+ #define NV_MIN(_a,_b) ((_a) < (_b) ? (_a) : (_b))
+@@ -394,6 +395,45 @@
+ #define NV_MAX_ISR_DELAY_US           20000
+ #define NV_MAX_ISR_DELAY_MS           (NV_MAX_ISR_DELAY_US / 1000)
+ 
++/*
++ * Linux 5.0 removed do_gettimeofday()/struct timeval from the kernel; by
++ * 5.6 struct timeval is gone entirely. Above that, NV_TIMER* operate on
++ * struct timespec64 (tv_nsec) via ktime_get_real_ts64() instead.
 + */
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
 +#define NV_TIMESPEC64 1
 +#endif
 +
-+/*
-  * timeval helpers
-  */
- #define NV_TIMERCMP(a, b, CMP)                                              \
-@@ -395,6 +402,29 @@
-     (((a)->tv_sec == (b)->tv_sec) ?                                         \
-         ((a)->tv_usec CMP (b)->tv_usec) : ((a)->tv_sec CMP (b)->tv_sec))
-
 +#if defined(NV_TIMESPEC64)
++
++#define NV_TIMERCMP(a, b, CMP)                                              \
++    (((a)->tv_sec == (b)->tv_sec) ?                                         \
++        ((a)->tv_nsec CMP (b)->tv_nsec) : ((a)->tv_sec CMP (b)->tv_sec))
++
 +#define NV_TIMERADD(a, b, result)                                           \
-+    {                                                                      \
-+        (result)->tv_sec  = (a)->tv_sec  + (b)->tv_sec;                     \
++    {                                                                       \
++        (result)->tv_sec = (a)->tv_sec + (b)->tv_sec;                       \
 +        (result)->tv_nsec = (a)->tv_nsec + (b)->tv_nsec;                    \
 +        if ((result)->tv_nsec >= NSEC_PER_SEC)                              \
-+        {                                                                  \
-+            ++(result)->tv_sec;                                            \
-+            (result)->tv_nsec -= NSEC_PER_SEC;                             \
-+        }                                                                  \
++        {                                                                   \
++            ++(result)->tv_sec;                                             \
++            (result)->tv_nsec -= NSEC_PER_SEC;                              \
++        }                                                                   \
 +    }
++
 +#define NV_TIMERSUB(a, b, result)                                           \
-+    {                                                                      \
-+        (result)->tv_sec  = (a)->tv_sec  - (b)->tv_sec;                     \
++    {                                                                       \
++        (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;                       \
 +        (result)->tv_nsec = (a)->tv_nsec - (b)->tv_nsec;                    \
 +        if ((result)->tv_nsec < 0)                                         \
 +        {                                                                  \
-+          --(result)->tv_sec;                                             \
-+          (result)->tv_nsec += NSEC_PER_SEC;                              \
++          --(result)->tv_sec;                                              \
++          (result)->tv_nsec += NSEC_PER_SEC;                               \
 +        }                                                                  \
 +    }
-+#else
- #define NV_TIMERADD(a, b, result)                                           \
-     {                                                                       \
-         (result)->tv_sec = (a)->tv_sec + (b)->tv_sec;                       \
-@@ -415,6 +445,7 @@
-           (result)->tv_usec += 1000000;                                     \
++
++#else /* !NV_TIMESPEC64 */
++
+ #define NV_TIMERCMP(a, b, CMP)                                              \
+     (((a)->tv_sec == (b)->tv_sec) ?                                         \
+         ((a)->tv_usec CMP (b)->tv_usec) : ((a)->tv_sec CMP (b)->tv_sec))
+@@ -420,6 +460,8 @@
          }                                                                   \
      }
+ 
 +#endif /* NV_TIMESPEC64 */
-
++
+ #define NV_ALIGN_DOWN(v,g) ((v) & ~((g) - 1))
+ #define NV_ALIGN_UP(v,g) (((v) + ((g) - 1)) & ~((g) - 1))
+ 
 --- a/os-interface.c
 +++ b/os-interface.c
-@@ -1,3 +1,12 @@
-+#include <linux/version.h>
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+@@ -25,6 +25,20 @@
+ #include "os-interface.h"
+ #include "nv-linux.h"
+ 
++/*
++ * Linux 5.0 removed do_gettimeofday()/struct timeval from the kernel.
++ * Use struct timespec64 + ktime_get_real_ts64() when building against >= 5.0
++ * (NV_TIMESPEC64, defined in nv.h), falling back to the old API below that.
++ */
++#if defined(NV_TIMESPEC64)
 +#include <linux/ktime.h>
 +#define nv_timeval           struct timespec64
 +#define nv_gettime(t)        ktime_get_real_ts64(t)
@@ -72,41 +104,59 @@
 +#define nv_timeval           struct timeval
 +#define nv_gettime(t)        do_gettimeofday(t)
 +#endif
-
- /*****************************************************************************
- *
-@@ -505,10 +514,15 @@
++
+ #if defined(CONFIG_SMP)
+ static atomic_t os_smp_barrier = ATOMIC_INIT(0);
+ 
+@@ -504,12 +518,16 @@
      U032 *useconds
  )
  {
 -    struct timeval tm;
 +    nv_timeval tm;
-
+ 
 -    do_gettimeofday(&tm);
 +    nv_gettime(&tm);
-
+ 
      *seconds = tm.tv_sec;
 +#if defined(NV_TIMESPEC64)
 +    *useconds = tm.tv_nsec / NSEC_PER_USEC;
 +#else
      *useconds = tm.tv_usec;
 +#endif
-
+ 
      return RM_OK;
  }
-@@ -539,9 +553,9 @@
+@@ -539,9 +557,9 @@
      unsigned long usec;
-
+ 
  #ifdef NV_CHECK_DELAY_ACCURACY
 -    struct timeval tm1, tm2;
 +    nv_timeval tm1, tm2;
-
+ 
 -    do_gettimeofday(&tm1);
 +    nv_gettime(&tm1);
  #endif
-
+ 
      if (in_irq() && (MicroSeconds > NV_MAX_ISR_DELAY_US))
-@@ -579,7 +593,7 @@
+@@ -556,10 +574,15 @@
+         udelay(usec);
+ 
+ #ifdef NV_CHECK_DELAY_ACCURACY
+-    do_gettimeofday(&tm2);
++    nv_gettime(&tm2);
++#if defined(NV_TIMESPEC64)
++    nv_printf(NV_DBG_ERRORS, "NVRM: osDelayUs %d: 0x%x 0x%x\n",
++        MicroSeconds, tm2.tv_sec - tm1.tv_sec, tm2.tv_nsec - tm1.tv_nsec);
++#else
+     nv_printf(NV_DBG_ERRORS, "NVRM: osDelayUs %d: 0x%x 0x%x\n",
+         MicroSeconds, tm2.tv_sec - tm1.tv_sec, tm2.tv_usec - tm1.tv_usec);
+ #endif
++#endif
+ 
+     return RM_OK;
+ }
+@@ -579,12 +602,12 @@
      unsigned long MicroSeconds;
      unsigned long jiffies;
      unsigned long mdelay_safe_msec;
@@ -116,25 +166,25 @@
 -    struct timeval tm_start;
 +    nv_timeval tm_start;
  #endif
-
+ 
 -    do_gettimeofday(&tm_aux);
 +    nv_gettime(&tm_aux);
  #ifdef NV_CHECK_DELAY_ACCURACY
      tm_start = tm_aux;
  #endif
-@@ -601,7 +615,11 @@
+@@ -599,7 +622,11 @@
+     }
+ 
      MicroSeconds = MilliSeconds * 1000;
--    tm_end.tv_usec = MicroSeconds;
 +#if defined(NV_TIMESPEC64)
 +    tm_end.tv_nsec = MicroSeconds * NSEC_PER_USEC;
 +#else
-+    tm_end.tv_usec = MicroSeconds;
+     tm_end.tv_usec = MicroSeconds;
 +#endif
      tm_end.tv_sec = 0;
      NV_TIMERADD(&tm_aux, &tm_end, &tm_end);
-
-@@ -640,10 +658,14 @@
-         do
+ 
+@@ -638,11 +665,15 @@
          {
              schedule_timeout(jiffies);
              /* catch the remainder, if any */
@@ -142,7 +192,7 @@
 +            nv_gettime(&tm_aux);
              if (NV_TIMERCMP(&tm_aux, &tm_end, <))
              {
-                 NV_TIMERSUB(&tm_end, &tm_aux, &tm_aux);
+                 NV_TIMERSUB(&tm_end, &tm_aux, &tm_aux); // tm_aux = tm_end - tm_aux
 +#if defined(NV_TIMESPEC64)
 +                MicroSeconds = tm_aux.tv_nsec / NSEC_PER_USEC + tm_aux.tv_sec * USEC_PER_SEC;
 +#else
@@ -151,3 +201,22 @@
              }
              else
                  MicroSeconds = 0;
+@@ -660,11 +691,16 @@
+         udelay(MicroSeconds);
+     }
+ #ifdef NV_CHECK_DELAY_ACCURACY
+-    do_gettimeofday(&tm_aux);
+-    timersub(&tm_aux, &tm_start, &tm_aux);
++    nv_gettime(&tm_aux);
++    NV_TIMERSUB(&tm_aux, &tm_start, &tm_aux);
++#if defined(NV_TIMESPEC64)
++    nv_printf(NV_DBG_ERRORS, "NVRM: osDelay %dmsec: %d.%09dsec\n",
++        MilliSeconds, tm_aux.tv_sec, tm_aux.tv_nsec);
++#else
+     nv_printf(NV_DBG_ERRORS, "NVRM: osDelay %dmsec: %d.%06dsec\n",
+         MilliSeconds, tm_aux.tv_sec, tm_aux.tv_usec);
+ #endif
++#endif
+ 
+     return RM_OK;
+ }

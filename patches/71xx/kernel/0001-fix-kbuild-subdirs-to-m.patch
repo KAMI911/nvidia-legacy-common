@@ -1,0 +1,11 @@
+--- a/Makefile.kbuild
++++ b/Makefile.kbuild
+@@ -236,7 +236,7 @@
+ # KBUILD build parameters.
+ #
+ 
+-KBUILD_PARAMS += KBUILD_VERBOSE=1 -C $(KERNEL_SOURCES) SUBDIRS=$(PWD)
++KBUILD_PARAMS += KBUILD_VERBOSE=1 -C $(KERNEL_SOURCES) M=$(PWD)
+ 
+ #
+ # NVIDIA sanity checks.

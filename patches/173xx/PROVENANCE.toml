@@ -15,9 +15,15 @@ id = "304xx-derived"
 note = "hunks adapted from patches/304xx/kernel/* — same os-interface.c / nv-linux.h structure"
 
 [[patch]]
+file = "kernel/0001-fix-kbuild-subdirs-to-m.patch"
+from = "nvidia-legacy"
+fixes = "Makefile.kbuild's KBUILD_PARAMS used the deprecated SUBDIRS=$(PWD), which modern kbuild silently ignores, so `make module` fell through to attempting a full in-tree kernel modules build (wanting arch/x86/tools/relocs_32.c, arch/x86/entry/syscalls/syscall_32.tbl, tools/build/Build.include -- none of which ship in a linux-headers-only package) instead of an external module build against this driver's own sources. M=$(PWD) is the modern equivalent. This was the actual reason 173 could never be build-tested at all -- confirmed by rebuilding with just this one-line fix: NVIDIA's own build harness then runs to completion and starts compiling nv.c/os-interface.c/etc for real."
+license = "trivial build shim"
+
+[[patch]]
 file = "_needs-build-test/0001-timespec64-kernel-5.0.patch.kmax-5.0"
 from = "304xx-derived"
 adapted_from = "304xx/kernel/0006-do_gettimeofday-5.0.patch.kmax-5.0"
 fixes = "do_gettimeofday()/struct timeval removed in Linux 5.0; guarded timespec64 conversion in os-interface.c + nv.h"
 license = "build-fix / no explicit licence (derivative of NVIDIA source + trivial API shim)"
-status = "DRAFT — reviewed against 173 source, NOT build-tested"
+status = "content-reviewed and mechanically valid (regenerated as a real diff -u, applies cleanly with patch -p1) and NECESSARY, but not yet SUFFICIENT: with the kbuild M= fix above, this now genuinely reaches real compilation, which surfaces ~25 further distinct API breaks against modern kernels (ACPI: acpi_walk_namespace/acpi_evaluate_integer/acpi_device_ops signatures; timer_list.data removed + init_timer->timer_setup; register_cpu_notifier/CPU_DOWN_* removed; spin_unlock_wait removed; scatterlist.page removed; struct file.f_dentry removed; read_cr4/write_cr4 moved; pud_offset signature change; several conftest.h #error's) -- a substantial forward-port effort of similar scope to 390xx/470xx's own kernel/ patch series (each 15-25 patches), not attempted here."
