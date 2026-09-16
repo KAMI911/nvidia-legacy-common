@@ -185,8 +185,11 @@ series:
   # X via the private xorg-server-legacy-nvidia-<abi>. Never blocking in CI.
   # 173xx forward-port is build-verified (kernel_max target 6.12 not yet fully
   # covered -- see docs/forward-port-status/173xx.md; verified so far on
-  # 5.4/6.8). Known hard blockers: 96/71 = 2.6-era pci/agp, plus 96xx's own
-  # earlier conftest.sh select_makefile blocker (not yet investigated).
+  # 5.4/6.8). 96xx/71xx: the select_makefile/PATCHLEVEL-misdetection blocker
+  # that previously stopped these two from reaching real compilation at all is
+  # fixed (kernel/0002 in each); both now reach genuine forward-port-class API
+  # errors (ACPI, asm/system.h, etc., same shape as 173xx) -- the actual
+  # forward-port work itself has not been attempted for either.
   # ---------------------------------------------------------------------------
   "173xx":
     version: "173.14.39"

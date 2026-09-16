@@ -61,5 +61,11 @@ license = "MIT (repo LICENSE)"
 [[patch]]
 file = "kernel/0001-fix-kbuild-subdirs-to-m.patch"
 from = "nvidia-legacy"
-fixes = "Makefile.kbuild's KBUILD_PARAMS used the deprecated SUBDIRS=$(PWD), which modern kbuild silently ignores, causing it to attempt a full in-tree kernel modules build instead of an external module build (same bug as 96xx/173xx). M=$(PWD) is the modern equivalent. Confirmed this exact bug and fix on the sibling 173xx series; not independently build-verified for 71xx in this environment."
+fixes = "Makefile.kbuild's KBUILD_PARAMS used the deprecated SUBDIRS=$(PWD), which modern kbuild silently ignores, causing it to attempt a full in-tree kernel modules build instead of an external module build (same bug as 96xx/173xx). M=$(PWD) is the modern equivalent. Confirmed this exact bug and fix on the sibling 173xx series; now also confirmed on 71xx itself (see 0002 below), which build-verifies this patch too."
+license = "trivial build shim"
+
+[[patch]]
+file = "kernel/0002-fix-select-makefile-modern-kernels.patch"
+from = "nvidia-legacy"
+fixes = "Same class of 2011-vintage conftest.sh/Makefile.kbuild bugs as the sibling 96xx series (see patches/96xx/PROVENANCE.toml for the full writeup of the select_makefile linux/version.h relocation and the PATCHLEVEL/VERSION Linux-2.4-detection collision), plus one 71xx-specific gap the 96xx fix didn't need: build_cflags() was missing -I$OUTPUT/arch/x86/include/generated entirely (96xx already had it), so once select_makefile itself was fixed, the very next conftest probe (a plain #include <linux/utsname.h>, pulled in via sched.h -> pid.h -> wait.h -> spinlock.h) failed with \"fatal error: asm/mmiowb.h: No such file or directory\" -- x86 has no arch-specific asm/mmiowb.h, only the generic include/asm-generic/mmiowb.h that kbuild symlinks into arch/x86/include/generated/asm/ for exactly this reason. Verified via the real apply-patches.sh --apply path against a fresh .run extraction: the build now reaches real Kbuild compilation of nv.c/nv-linux.h, surfacing genuine API-break compile errors (acpi_walk_namespace conftest failure, unconditional asm/system.h include) of the same general class as 96xx/173xx's forward-port work -- a further, larger effort, not attempted here; this patch's scope is strictly the select_makefile/PATCHLEVEL/mmiowb.h misdetection chain."
 license = "trivial build shim"

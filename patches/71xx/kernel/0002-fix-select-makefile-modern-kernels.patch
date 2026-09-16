@@ -1,0 +1,132 @@
+diff -ru a/conftest.sh b/conftest.sh
+--- a/conftest.sh	2026-09-16 09:35:47.922282160 +0200
++++ b/conftest.sh	2026-09-16 09:35:47.924012521 +0200
+@@ -84,19 +84,19 @@
+     if [ "$OUTPUT" != "$SOURCES" ]; then
+         OUTPUT_CFLAGS="-I$OUTPUT/include2 -I$OUTPUT/include"
+         if [ -f "$OUTPUT/include/generated/autoconf.h" ]; then
+-            AUTOCONF_CFLAGS="-include $OUTPUT/include/generated/autoconf.h"
++            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $OUTPUT/include/generated/autoconf.h"
+         else
+-            AUTOCONF_CFLAGS="-include $OUTPUT/include/linux/autoconf.h"
++            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $OUTPUT/include/linux/autoconf.h"
+         fi
+     else
+         if [ -f "$HEADERS/generated/autoconf.h" ]; then
+-            AUTOCONF_CFLAGS="-include $HEADERS/generated/autoconf.h"
++            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $HEADERS/generated/autoconf.h"
+         else
+-            AUTOCONF_CFLAGS="-include $HEADERS/linux/autoconf.h"
++            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $HEADERS/linux/autoconf.h"
+         fi
+     fi
+ 
+-    CFLAGS="$CFLAGS $OUTPUT_CFLAGS -I$HEADERS $AUTOCONF_CFLAGS"
++    CFLAGS="$CFLAGS $OUTPUT_CFLAGS -I$HEADERS -I$HEADERS/uapi -I$OUTPUT/include/generated/uapi $AUTOCONF_CFLAGS"
+ 
+     test_xen
+ 
+@@ -120,10 +120,11 @@
+         fi
+     fi
+ 
+-    CFLAGS="$BASE_CFLAGS $MACH_CFLAGS $OUTPUT_CFLAGS -I$HEADERS $AUTOCONF_CFLAGS"
++    CFLAGS="$BASE_CFLAGS $MACH_CFLAGS $OUTPUT_CFLAGS -I$HEADERS -I$HEADERS/uapi -I$OUTPUT/include/generated/uapi $AUTOCONF_CFLAGS"
+ 
+     if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]; then
+-        CFLAGS="$CFLAGS -I$SOURCES/arch/x86/include"
++        CFLAGS="$CFLAGS -I$SOURCES/arch/x86/include -I$OUTPUT/arch/x86/include/generated"
++        CFLAGS="$CFLAGS -I$SOURCES/arch/x86/include/uapi -I$OUTPUT/arch/x86/include/generated/uapi"
+     fi
+     if [ -n "$BUILD_PARAMS" ]; then
+         CFLAGS="$CFLAGS -D$BUILD_PARAMS"
+@@ -1300,10 +1301,22 @@
+         MAKEFILE=$HEADERS/../Makefile
+ 
+         if [ -f $MAKEFILE ]; then
++            #
++            # PATCHLEVEL alone is not a reliable "is this Linux 2.4"
++            # check: modern kernel.PATCHLEVEL.sublevel numbering (e.g.
++            # 5.4, 6.4, 7.4) collides with the old 2.4.x PATCHLEVEL by
++            # coincidence, which wrongly selected the Linux-2.4-era
++            # Rules.make/Makefile.nvidia build path on any x.4 kernel.
++            # Require VERSION == 2 as well, matching what "Linux 2.4"
++            # actually means.
++            VERSION=$(grep "^VERSION =" $MAKEFILE | cut -d " " -f 3)
+             PATCHLEVEL=$(grep "^PATCHLEVEL =" $MAKEFILE | cut -d " " -f 3)
+ 
+             if [ -z "$PATCHLEVEL" ]; then
+                 exit 1
++            elif [ "$VERSION" != "2" ]; then
++                echo 0
++                exit 0
+             else
+                 echo $PATCHLEVEL
+                 exit 0
+@@ -1376,7 +1389,8 @@
+         FILE="linux/version.h"
+         SELECTED_MAKEFILE=""
+ 
+-        if [ -f $HEADERS/$FILE -o -f $OUTPUT/include/$FILE ]; then
++        if [ -f $HEADERS/$FILE -o -f $OUTPUT/include/$FILE -o \
++             -f $OUTPUT/include/generated/uapi/$FILE ]; then
+             #
+             # We are either looking at a configured kernel source
+             # tree or at headers shipped for a specific kernel.
+diff -ru a/Makefile.kbuild b/Makefile.kbuild
+--- a/Makefile.kbuild	2026-09-16 09:35:47.917215405 +0200
++++ b/Makefile.kbuild	2026-09-16 09:35:47.919910560 +0200
+@@ -134,11 +134,26 @@
+ PATCHLEVEL ?= $(shell $(CONFTEST) kernel_patch_level)
+ 
+ #
++# PATCHLEVEL alone does not reliably mean "this is Linux 2.4": kbuild
++# sets PATCHLEVEL from the target kernel's own VERSION.PATCHLEVEL.SUBLEVEL
++# scheme, and modern kernel.PATCHLEVEL numbering (5.4, 6.4, 7.4, ...)
++# coincidentally collides with the ancient 2.4.x PATCHLEVEL value --
++# wrongly routing any "x.4" kernel down the Linux-2.4-only build paths
++# below (Rules.make, .o module extension, etc). Only genuine Linux 2.4
++# (VERSION == 2) should take those paths.
++#
++ifeq ($(VERSION),2)
++ NV_IS_KERNEL_2_4 := $(if $(filter 4,$(PATCHLEVEL)),1,0)
++else
++ NV_IS_KERNEL_2_4 := 0
++endif
++
++#
+ # Linux 2.4 uses the .o module extension. Linux 2.6, however, uses the .ko
+ # module extension. Handle these gracefully.
+ #
+ 
+-ifeq ($(PATCHLEVEL), 4)
++ifeq ($(NV_IS_KERNEL_2_4), 1)
+  MODULE_OBJECT := $(MODULE_NAME).o
+ else
+  MODULE_OBJECT := $(MODULE_NAME).ko
+@@ -163,7 +178,7 @@
+  EXTRA_CFLAGS += -DDEBUG -g 
+ endif
+ 
+-ifneq ($(PATCHLEVEL), 4)
++ifneq ($(NV_IS_KERNEL_2_4), 1)
+  COMPILE_TESTS = \
+ 	remap_page_range \
+ 	remap_pfn_range \
+@@ -227,7 +242,7 @@
+ # More quirks for Linux 2.4 KBUILD, which doesn't link automatically.
+ #
+ 
+-ifeq ($(PATCHLEVEL), 4)
++ifeq ($(NV_IS_KERNEL_2_4), 1)
+ $(obj)/$(MODULE_NAME).o: $($(MODULE_NAME)-objs)
+ 	$(LD) $(EXTRA_LDFLAGS) -r -o $@ $($(MODULE_NAME)-objs)
+ endif
+@@ -327,6 +342,6 @@
+ # includes dependencies automatically.
+ #
+ 
+-ifeq ($(PATCHLEVEL), 4)
++ifeq ($(NV_IS_KERNEL_2_4), 1)
+ include $(KERNEL_SOURCES)/Rules.make
+ endif
