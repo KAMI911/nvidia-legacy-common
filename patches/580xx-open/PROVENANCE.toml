@@ -57,3 +57,23 @@ license = "MIT (repo LICENSE)"
 # origin_commit = "<sha>"
 # fixes = "gcc 15 -Werror=implicit-int / incompatible-pointer-types in conftest"
 # license = "public-domain"
+
+# ---------------------------------------------------------------------------
+# NOTE (no patch -- investigated, no driver-side fix exists): nvidia.ko's
+# closed nv-kernel.o_binary blob (kernel-open's "open" nvidia.ko still links
+# a closed core RM/GSP blob, same as the non-open 580xx series) produces
+# thousands of "'naked' return found in MITIGATION_RETHUNK build" objtool
+# warnings on any kernel with CONFIG_X86_KERNEL_IBT=y (e.g. Debian trixie).
+# This is the exact same issue documented in patches/580xx/PROVENANCE.toml's
+# kernel/0001-fix-modeset-objtool.patch entry, which explains in full why
+# OBJECT_FILES_NON_STANDARD cannot suppress it once IBT forces kbuild to
+# defer the whole-module objtool check to link time -- see that entry for
+# the full root-cause trace. No driver-side fix is known; this is a kernel
+# build-system + vendor-blob interaction, not something patchable here.
+# Separately, kernel-open's nvidia-modeset.ko (genuinely open source here,
+# no blob) shows a smaller but real set of the same warnings (~500 distinct
+# auto-generated trampoline-style functions, e.g. _nv000742kms) even on a
+# from-scratch local compile with matching gcc versions -- this narrower
+# case is NVIDIA's own code and could in principle be fixed on their side,
+# but the cause (why these specific generated functions end up "naked")
+# was not tracked down further here.
