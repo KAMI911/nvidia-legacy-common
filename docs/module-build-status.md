@@ -21,7 +21,8 @@ payload (`install-userspace.sh`).
 
 | Series | Patch set | Builds on | Blocker |
 |---|---|---|---|
-| 580xx / 580xx-open | none needed (active upstream) | 6.16 | not yet compile-tested here |
+| 580xx | kernel/0001-fix-modeset-objtool | **builds clean on non-IBT kernels** (5.4, noble) | On CONFIG_X86_KERNEL_IBT=y kernels (Debian trixie), both nvidia.ko and nvidia-modeset.ko still carry thousands of objtool RETHUNK warnings from the closed blob -- non-fatal (build succeeds), no known driver-side fix (see patches/580xx/PROVENANCE.toml). |
+| 580xx-open | none (investigated, no fix found) | builds; same IBT-kernel objtool warnings as 580xx (blob) plus a smaller set from real open code | See patches/580xx-open/PROVENANCE.toml. |
 | 470xx | AUR nvidia-470xx-utils 0001-0018 (imported) | **✅ builds on 6.12** — nvidia{,-drm,-modeset,-uvm,-peermem}.ko link clean |
 | 390xx | megvadulthangya 0001–0021 + **0022-add-linux-version-h** | **✅ builds on 6.12** — nvidia{,-modeset,-drm,-uvm}.ko all link clean (verified in debian:trixie / kernel 6.12.107 / gcc-14). Runtime still needs a Fermi/Kepler card. |
 | 340xx | AUR nvidia-340xx 0001-0019 + version.h (imported) | **✅ builds on 6.12** — nvidia.ko links (warnings only) |
