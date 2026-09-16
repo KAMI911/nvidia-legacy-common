@@ -1,0 +1,152 @@
+diff -ru a/conftest.sh b/conftest.sh
+--- a/conftest.sh	2026-09-16 18:11:18.405591022 +0200
++++ b/conftest.sh	2026-09-16 18:11:18.407643223 +0200
+@@ -23,6 +23,32 @@
+ OUTPUT=$5
+ XEN_PRESENT=1
+ 
++#
++# Debian splits kernel-headers into a "-common" package (the real
++# linux/*.h, uapi/*.h etc.) plus a slim per-flavor package that only has
++# include/{config,generated} and arch/ -- its own Makefile is just
++# 'include /path/to/...-common/Makefile'. Real kbuild follows that chain
++# automatically (via $(srctree)); this script's own manually-reconstructed
++# -I/-include paths, rooted at $HEADERS ($SOURCES/include), do not, so
++# linux/kconfig.h (needed for IS_ENABLED() -- without it, basic headers
++# like linux/fs.h fail with cryptic "missing binary operator" errors) and
++# everything else under the shared tree silently don't exist there. Detect
++# the real header root the same way the flavor Makefile does, and add it
++# to the search path too. On a non-split (e.g. Ubuntu) layout this is a
++# no-op: the flavor Makefile doesn't just 'include' a sibling package.
++#
++NV_COMMON_SOURCES="$SOURCES"
++NV_COMMON_HEADERS="$HEADERS"
++if [ -f "$SOURCES/Makefile" ]; then
++    _nv_common=`grep -m1 '^include ' "$SOURCES/Makefile" 2>/dev/null | \
++        sed -e 's/^include[ 	]*//' -e 's,/Makefile[ 	]*$,,'`
++    if [ -n "$_nv_common" ] && [ -d "$_nv_common/include" ] && \
++       [ "$_nv_common" != "$SOURCES" ]; then
++        NV_COMMON_SOURCES="$_nv_common"
++        NV_COMMON_HEADERS="$NV_COMMON_SOURCES/include"
++    fi
++fi
++
+ test_xen() {
+     #
+     # Determine if the target kernel is a Xen kernel. It used to be
+@@ -90,7 +116,8 @@
+ 
+     for FILE in $FILES; do
+         FILE_DEFINE=NV_`echo $FILE | tr '/.' '_' | tr 'a-z' 'A-Z'`_PRESENT
+-        if [ -f $HEADERS/$FILE -o -f $OUTPUT/include/$FILE ]; then
++        if [ -f $HEADERS/$FILE -o -f $OUTPUT/include/$FILE -o \
++             -f $NV_COMMON_HEADERS/$FILE ]; then
+             echo "#define $FILE_DEFINE" >> conftest.h
+         else
+             echo "#undef $FILE_DEFINE" >> conftest.h
+@@ -99,26 +126,42 @@
+ }
+ 
+ build_cflags() {
++    #
++    # GCC 14 promoted -Wimplicit-function-declaration (and
++    # -Wimplicit-int/-Wint-conversion) from a warning to a hard error by
++    # default. Most of this script's presence probes -- both the original
++    # ones and the ones added this session -- rely on calling a possibly-
++    # undeclared function and checking whether the compile still succeeds
++    # (an implicit declaration used to be a harmless warning; a real
++    # prototype rejects a wrong argument count or type unconditionally,
++    # regardless of this flag). Under gcc 14's new default, EVERY such
++    # probe hard-fails whether the function is present or not, making the
++    # whole detection scheme return false negatives uniformly. Restore
++    # the pre-14 behavior explicitly so the rest of this script keeps
++    # working the way it was written.
++    #
+     BASE_CFLAGS="-O2 -D__KERNEL__ \
+ -DKBUILD_BASENAME=\"#conftest$$\" -DKBUILD_MODNAME=\"#conftest$$\" \
++-Wno-error=implicit-function-declaration -Wno-error=implicit-int \
++-Wno-error=int-conversion \
+ -nostdinc -isystem $ISYSTEM"
+ 
+     if [ "$OUTPUT" != "$SOURCES" ]; then
+         OUTPUT_CFLAGS="-I$OUTPUT/include2 -I$OUTPUT/include"
+         if [ -f "$OUTPUT/include/generated/autoconf.h" ]; then
+-            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $OUTPUT/include/generated/autoconf.h"
++            AUTOCONF_CFLAGS="-include $NV_COMMON_HEADERS/linux/kconfig.h -include $OUTPUT/include/generated/autoconf.h"
+         else
+-            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $OUTPUT/include/linux/autoconf.h"
++            AUTOCONF_CFLAGS="-include $NV_COMMON_HEADERS/linux/kconfig.h -include $OUTPUT/include/linux/autoconf.h"
+         fi
+     else
+         if [ -f "$HEADERS/generated/autoconf.h" ]; then
+-            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $HEADERS/generated/autoconf.h"
++            AUTOCONF_CFLAGS="-include $NV_COMMON_HEADERS/linux/kconfig.h -include $HEADERS/generated/autoconf.h"
+         else
+-            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $HEADERS/linux/autoconf.h"
++            AUTOCONF_CFLAGS="-include $NV_COMMON_HEADERS/linux/kconfig.h -include $HEADERS/linux/autoconf.h"
+         fi
+     fi
+ 
+-    CFLAGS="$CFLAGS $OUTPUT_CFLAGS -I$HEADERS $AUTOCONF_CFLAGS"
++    CFLAGS="$CFLAGS $OUTPUT_CFLAGS -I$HEADERS -I$NV_COMMON_HEADERS $AUTOCONF_CFLAGS"
+ 
+     test_xen
+ 
+@@ -146,12 +189,15 @@
+ 
+     CFLAGS="$BASE_CFLAGS $MACH_CFLAGS $OUTPUT_CFLAGS $AUTOCONF_CFLAGS"
+     CFLAGS="$CFLAGS -I$HEADERS -I$HEADERS/uapi -I$OUTPUT/include/generated/uapi"
++    CFLAGS="$CFLAGS -I$NV_COMMON_HEADERS -I$NV_COMMON_HEADERS/uapi"
+ 
+     if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]; then
+         CFLAGS="$CFLAGS -I$SOURCES/arch/x86/include"
+         CFLAGS="$CFLAGS -I$SOURCES/arch/x86/include/uapi"
+         CFLAGS="$CFLAGS -I$OUTPUT/arch/x86/include/generated"
+         CFLAGS="$CFLAGS -I$OUTPUT/arch/x86/include/generated/uapi"
++        CFLAGS="$CFLAGS -I$NV_COMMON_SOURCES/arch/x86/include"
++        CFLAGS="$CFLAGS -I$NV_COMMON_SOURCES/arch/x86/include/uapi"
+     fi
+     if [ -n "$BUILD_PARAMS" ]; then
+         CFLAGS="$CFLAGS -D$BUILD_PARAMS"
+diff -ru a/nv-linux.h b/nv-linux.h
+--- a/nv-linux.h	2026-09-16 18:11:18.416057087 +0200
++++ b/nv-linux.h	2026-09-16 18:11:18.418854138 +0200
+@@ -279,9 +279,15 @@
+ 
+ #if defined(NVCPU_X86) || defined(NVCPU_X86_64)
+ #ifndef write_cr4
+-#if defined(NV_ASM_SPECIAL_INSNS_H_PRESENT)
++#if defined(NV_ASM_SPECIAL_INSNS_H_PRESENT) && defined(NVCPU_X86_64)
+ /* bare write_cr4()/read_cr4() were removed from the kernel; the
+- * replacements (__write_cr4()/__read_cr4()) live in <asm/special_insns.h> */
++ * replacements (__write_cr4()/__read_cr4()) live in <asm/special_insns.h>.
++ * On i386 these call the out-of-line native_write_cr4()/native_read_cr4(),
++ * which are NOT EXPORT_SYMBOL'd -- fine from in-tree code, but an
++ * out-of-tree module gets an undefined-symbol link failure there (seen:
++ * modpost "native_write_cr4" undefined). On x86_64 they are __always_inline
++ * and need no such export, so only use them there; i386 falls back to raw
++ * asm below, which needs no kernel symbol at all. */
+ #define write_cr4(x) __write_cr4(x)
+ #else
+ #define write_cr4(x) __asm__ ("movl %0,%%cr4" :: "r" (x));
+@@ -289,7 +295,7 @@
+ #endif
+ 
+ #ifndef read_cr4
+-#if defined(NV_ASM_SPECIAL_INSNS_H_PRESENT)
++#if defined(NV_ASM_SPECIAL_INSNS_H_PRESENT) && defined(NVCPU_X86_64)
+ #define read_cr4() __read_cr4()
+ #else
+ #define read_cr4()                                  \
+diff -ru a/nv-vm.c b/nv-vm.c
+--- a/nv-vm.c	2026-09-16 18:11:18.410408345 +0200
++++ b/nv-vm.c	2026-09-16 18:11:18.413260728 +0200
+@@ -151,7 +151,7 @@
+ #if defined(NV_SCATTERLIST_HAS_PAGE)
+     sg_ptr->page = virt_to_page(base);
+ #else
+-    sg_ptr->page_link = virt_to_page(base);
++    sg_ptr->page_link = (unsigned long)virt_to_page(base);
+ #endif
+     sg_ptr->offset = (unsigned long)base & ~PAGE_MASK;
+     sg_ptr->length  = num_pages * PAGE_SIZE;
