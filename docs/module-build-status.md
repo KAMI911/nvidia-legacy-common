@@ -25,8 +25,9 @@ payload (`install-userspace.sh`).
 | 470xx | AUR nvidia-470xx-utils 0001-0018 (imported) | **✅ builds on 6.12** — nvidia{,-drm,-modeset,-uvm,-peermem}.ko link clean |
 | 390xx | megvadulthangya 0001–0021 + **0022-add-linux-version-h** | **✅ builds on 6.12** — nvidia{,-modeset,-drm,-uvm}.ko all link clean (verified in debian:trixie / kernel 6.12.107 / gcc-14). Runtime still needs a Fermi/Kepler card. |
 | 340xx | AUR nvidia-340xx 0001-0019 + version.h (imported) | **✅ builds on 6.12** — nvidia.ko links (warnings only) |
-| 304xx | flydiscohuebr/nvidia-304 (held in _needs-build-test) | ~7.0 once re-homed | strip-level fix |
-| 173/96/71xx | forward-port track (roadmap only) | — | see forward-port-status/ |
+| 304xx | flydiscohuebr/nvidia-304 (gated into kernel/) | **✅ builds on 5.4 & 6.8** — nvidia.ko links clean | — |
+| 173xx | nvidia-legacy forward-port (kernel/0001-0003) | **✅ builds on 5.4 & 6.8** — nvidia.ko links clean, zero warnings | Runtime still needs a GeForce FX card. See forward-port-status/173xx.md. |
+| 96/71xx | forward-port track (roadmap only) | — | 96xx: conftest.sh select_makefile fails before reaching real compilation (not yet investigated). 71xx: not independently attempted. |
 
 ## 390xx / Linux 6.12 — SOLVED
 
