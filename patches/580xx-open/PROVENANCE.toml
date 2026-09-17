@@ -70,10 +70,24 @@ license = "MIT (repo LICENSE)"
 # defer the whole-module objtool check to link time -- see that entry for
 # the full root-cause trace. No driver-side fix is known; this is a kernel
 # build-system + vendor-blob interaction, not something patchable here.
-# Separately, kernel-open's nvidia-modeset.ko (genuinely open source here,
-# no blob) shows a smaller but real set of the same warnings (~500 distinct
-# auto-generated trampoline-style functions, e.g. _nv000742kms) even on a
-# from-scratch local compile with matching gcc versions -- this narrower
-# case is NVIDIA's own code and could in principle be fixed on their side,
-# but the cause (why these specific generated functions end up "naked")
-# was not tracked down further here.
+#
+# CORRECTION (previous note in this spot was wrong, not a regression --
+# re-investigated on a from-scratch build against debian:trixie/6.12):
+# kernel-open's nvidia-modeset.ko is NOT actually blob-free. kernel-open/
+# nvidia-modeset/ links nv-modeset-kernel.o_binary, a precompiled closed
+# ELF relocatable (dated well before any local build, not something kbuild
+# produces here) -- the exact same kind of vendor blob as nv-kernel.o_binary
+# for the main nvidia.ko, just a second, smaller one specific to the modeset
+# module. Cross-checking every "naked return" warning's function name (base
+# name, with gcc's .part.N/.isra.N/.constprop.N interprocedural-optimization
+# suffixes stripped from both sides before comparing) against this blob's
+# own symbol table: 2627 of 2629 distinct warnings on a debian:trixie build
+# match a symbol that exists in nv-modeset-kernel.o_binary, including
+# recognizable driver-internal names (DSC_GeneratePPS, ConfigureCsc0C5,
+# FrameLockSetVideoMode, etc.) that look like real open source at a glance
+# but are compiled into the blob, not from any .c file under kernel-open/.
+# The earlier "~500 auto-generated trampoline-style functions [...] is
+# NVIDIA's own [buildable, fixable] code" claim was an artifact of not
+# checking the blob's symbol table before concluding a function must be
+# locally compiled -- it is the same root cause as the main nv-kernel.o
+# blob throughout, with no separate open-code objtool issue to fix.
