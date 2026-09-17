@@ -1,0 +1,1931 @@
+Csak ebben: b: conftest_debug2.sh
+Csak ebben: b: conftest_debug.sh
+diff -ru a/conftest.sh b/conftest.sh
+--- a/conftest.sh	2026-09-17 19:09:23.906790835 +0200
++++ b/conftest.sh	2026-09-17 19:05:24.041596095 +0200
+@@ -131,13 +131,494 @@
+     fi
+ }
+ 
+-CONFTEST_PREAMBLE="#if defined(CONFIG_XEN) && \
++CONFTEST_PREAMBLE="#include \"conftest.h\"
++    #if defined(NV_LINUX_KCONFIG_H_PRESENT)
++    #include <linux/kconfig.h>
++    #endif
++    #if defined(NV_GENERATED_AUTOCONF_H_PRESENT)
++    #include <generated/autoconf.h>
++    #else
++    #include <linux/autoconf.h>
++    #endif
++    #if defined(CONFIG_XEN) && \
+         defined(CONFIG_XEN_INTERFACE_VERSION) &&  !defined(__XEN_INTERFACE_VERSION__)
+     #define __XEN_INTERFACE_VERSION__ CONFIG_XEN_INTERFACE_VERSION
+     #endif"
+ 
+ compile_test() {
+     case "$1" in
++        asm_kmap_types_h)
++            #
++            # Determine if <asm/kmap_types.h> is present. It was removed
++            # when the highmem/kmap infrastructure was reworked; nothing
++            # in this driver actually uses symbols from it (it was
++            # included defensively), so this is a straight presence
++            # guard, not a functional compat shim.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <asm/kmap_types.h>
++            " > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#define NV_ASM_KMAP_TYPES_H_PRESENT" >> conftest.h
++                return
++            else
++                echo "#undef NV_ASM_KMAP_TYPES_H_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++        arch_phys_wc_add)
++            #
++            # Determine if arch_phys_wc_add()/arch_phys_wc_del() are
++            # present with a real prototype. mtrr_add()/mtrr_del() are
++            # declared 'extern' by <asm/mtrr.h> whenever CONFIG_MTRR=y
++            # (so they compile fine), but on many distro kernels they are
++            # no longer EXPORT_SYMBOL'd for use by out-of-tree modules --
++            # a link-time failure conftest.sh's own standalone compiles
++            # cannot see. arch_phys_wc_add()/_del() are the maintained,
++            # always-exported replacement, so prefer them when present.
++            # Wrong-argument-count trick (see register_cpu_notifier
++            # above) to get a reliable answer without -Werror.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/io.h>
++            void conftest_arch_phys_wc_add(void) {
++                arch_phys_wc_add();
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#undef NV_ARCH_PHYS_WC_ADD_PRESENT" >> conftest.h
++                return
++            else
++                echo "#define NV_ARCH_PHYS_WC_ADD_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++        asm_special_insns_h)
++            #
++            # Determine if <asm/special_insns.h> is present. read_cr4()/
++            # write_cr4() and friends moved there out of <asm/system.h>.
++            # NOTE: unlike most headers here, this one lives under
++            # arch/x86/include (not under $HEADERS or $OUTPUT/include), so
++            # a plain file-existence check against those two prefixes
++            # (as test_headers() does) would always miss it -- probe by
++            # actually compiling the #include instead.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/linkage.h>
++            #include <asm/special_insns.h>
++            " > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#define NV_ASM_SPECIAL_INSNS_H_PRESENT" >> conftest.h
++                return
++            else
++                echo "#undef NV_ASM_SPECIAL_INSNS_H_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++        asm_set_memory_h)
++            #
++            # Determine if <asm/set_memory.h> is present. set_pages_uc()
++            # and friends moved there out of <asm/cacheflush.h>. Probed
++            # by compiling the #include for the same reason as
++            # asm_special_insns_h above.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <asm/set_memory.h>
++            " > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#define NV_ASM_SET_MEMORY_H_PRESENT" >> conftest.h
++                return
++            else
++                echo "#undef NV_ASM_SET_MEMORY_H_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++        smp_call_function_returns_int)
++            #
++            # Determine if smp_call_function() returns int (it became
++            # infallible and started returning void on later kernels).
++            # Try both the 4-arg and 3-arg forms, matching the argument-
++            # count detection done by the 'smp_call_function' test.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/smp.h>
++            void conftest_smp_call_function_returns_int(void (*func)(void *), void *info, int wait) {
++                int ret = smp_call_function(func, info, 0, wait);
++                (void)ret;
++            }" > conftest$$.c
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#define NV_SMP_CALL_FUNCTION_RETURNS_INT" >> conftest.h
++                return
++            fi
++
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/smp.h>
++            void conftest_smp_call_function_returns_int(void (*func)(void *), void *info, int wait) {
++                int ret = smp_call_function(func, info, wait);
++                (void)ret;
++            }" > conftest$$.c
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#define NV_SMP_CALL_FUNCTION_RETURNS_INT" >> conftest.h
++                return
++            else
++                echo "#undef NV_SMP_CALL_FUNCTION_RETURNS_INT" >> conftest.h
++                return
++            fi
++        ;;
++
++        on_each_cpu_returns_int)
++            #
++            # Determine if on_each_cpu() returns int (it became
++            # infallible and started returning void on later kernels).
++            # Try both the 4-arg and 3-arg forms, matching the argument-
++            # count detection done by the 'on_each_cpu' test.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/smp.h>
++            void conftest_on_each_cpu_returns_int(void (*func)(void *), void *info, int wait) {
++                int ret = on_each_cpu(func, info, 0, wait);
++                (void)ret;
++            }" > conftest$$.c
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#define NV_ON_EACH_CPU_RETURNS_INT" >> conftest.h
++                return
++            fi
++
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/smp.h>
++            void conftest_on_each_cpu_returns_int(void (*func)(void *), void *info, int wait) {
++                int ret = on_each_cpu(func, info, wait);
++                (void)ret;
++            }" > conftest$$.c
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#define NV_ON_EACH_CPU_RETURNS_INT" >> conftest.h
++                return
++            else
++                echo "#undef NV_ON_EACH_CPU_RETURNS_INT" >> conftest.h
++                return
++            fi
++        ;;
++
++        spin_unlock_wait)
++            #
++            # Determine if spin_unlock_wait() is present. It was removed
++            # from the kernel (no safe generic implementation existed);
++            # every in-tree caller was converted to a lock/unlock pair,
++            # which we mirror as the fallback. Same wrong-argument-count
++            # trick as register_cpu_notifier above, for the same reason
++            # (this script's conftest CFLAGS carry no -Werror, so a
++            # genuinely-absent function would otherwise compile "fine" as
++            # an implicit declaration and be misreported as present).
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/spinlock.h>
++            void conftest_spin_unlock_wait(void) {
++                spin_unlock_wait();
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#undef NV_SPIN_UNLOCK_WAIT_PRESENT" >> conftest.h
++                return
++            else
++                echo "#define NV_SPIN_UNLOCK_WAIT_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++        file_f_dentry)
++            #
++            # Determine if 'struct file' has an 'f_dentry' member. Modern
++            # kernels only have 'f_path.dentry' (f_dentry used to be a
++            # separate field, then a macro alias for f_path.dentry, and is
++            # now gone entirely).
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/fs.h>
++            int conftest_file_f_dentry(void) {
++                return offsetof(struct file, f_dentry);
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#define NV_FILE_HAS_F_DENTRY" >> conftest.h
++                return
++            else
++                echo "#undef NV_FILE_HAS_F_DENTRY" >> conftest.h
++                return
++            fi
++        ;;
++
++        register_cpu_notifier)
++            #
++            # Determine if register_cpu_notifier() is present. The notifier-
++            # based CPU hotplug API (register_cpu_notifier(), CPU_DOWN_PREPARE,
++            # CPU_DOWN_FAILED, etc.) was removed from the kernel when the
++            # hotplug state machine was reworked, and this conftest.sh does
++            # not add -Werror=implicit-function-declaration to its own
++            # CFLAGS -- so a straightforward "does it link" probe would
++            # wrongly report "present" for a genuinely-absent function (an
++            # implicit declaration just warns, it does not fail the
++            # compile). Instead, call with the WRONG argument count: if the
++            # function is really declared, that's a hard "too few
++            # arguments" error (unconditional in C, no -Werror needed); if
++            # it is absent, the bogus implicit-int call compiles fine.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/cpu.h>
++            int conftest_register_cpu_notifier(void) {
++                register_cpu_notifier();
++                return 0;
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#undef NV_REGISTER_CPU_NOTIFIER_PRESENT" >> conftest.h
++                return
++            else
++                echo "#define NV_REGISTER_CPU_NOTIFIER_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++        pci_map_sg)
++            #
++            # Determine if pci_map_sg()/pci_unmap_sg() are present.
++            # <linux/pci-dma-compat.h> (which provided them as thin
++            # wrappers over dma_map_sg()/dma_unmap_sg()) was removed;
++            # dma_map_sg(&dev->dev, ...) is the direct replacement.
++            # Wrong-argument-count trick as above (no -Werror in this
++            # script's own conftest CFLAGS).
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/pci.h>
++            void conftest_pci_map_sg(void) {
++                pci_map_sg();
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#undef NV_PCI_MAP_SG_PRESENT" >> conftest.h
++                return
++            else
++                echo "#define NV_PCI_MAP_SG_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++        ioremap_nocache)
++            #
++            # Determine if ioremap_nocache() is present. It was removed
++            # once every architecture's ioremap() became non-cached by
++            # default (they were made identical, then the _nocache name
++            # was dropped) -- plain ioremap() is the correct replacement.
++            # Wrong-argument-count trick (see register_cpu_notifier
++            # above): this script's conftest CFLAGS carry no -Werror, so
++            # a genuinely-absent function would otherwise compile "fine"
++            # as an implicit declaration and be misreported as present.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <asm/io.h>
++            void conftest_ioremap_nocache(void) {
++                ioremap_nocache();
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#undef NV_IOREMAP_NOCACHE_PRESENT" >> conftest.h
++                return
++            else
++                echo "#define NV_IOREMAP_NOCACHE_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++        vmalloc_has_pgprot_arg)
++            #
++            # Determine if __vmalloc() still takes a pgprot_t argument.
++            # It was removed in Linux 5.8 ("mm: remove the pgprot
++            # argument to __vmalloc") -- vmalloc() is now always
++            # PAGE_KERNEL.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/vmalloc.h>
++            void conftest_vmalloc_pgprot(void) {
++                __vmalloc(0, 0, PAGE_KERNEL);
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#define NV_VMALLOC_HAS_PGPROT_ARG" >> conftest.h
++                return
++            else
++                echo "#undef NV_VMALLOC_HAS_PGPROT_ARG" >> conftest.h
++                return
++            fi
++        ;;
++
++        vm_flags_set)
++            #
++            # Determine if vm_flags_set() is present. vma->vm_flags became
++            # a read-only accessor in Linux 6.3+ (direct '|=' is a compile
++            # error); vm_flags_set()/vm_flags_clear() are the replacement.
++            # Wrong-argument-count trick as above, so a genuinely-absent
++            # function (older kernels) isn't misreported as present.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/mm.h>
++            void conftest_vm_flags_set(void) {
++                vm_flags_set();
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#undef NV_VM_FLAGS_SET_PRESENT" >> conftest.h
++                return
++            else
++                echo "#define NV_VM_FLAGS_SET_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++
++        proc_create_data)
++            #
++            # Determine if proc_create_data() is present. create_proc_entry()
++            # (the old way to make a procfs file, with a directly-assignable
++            # .read_proc callback on the returned struct proc_dir_entry) was
++            # removed entirely; proc_create_data() + a proc_ops/file_operations
++            # table is the replacement. Wrong-argument-count trick as
++            # elsewhere in this file.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/proc_fs.h>
++            void conftest_proc_create_data(void) {
++                proc_create_data();
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#undef NV_PROC_CREATE_DATA_PRESENT" >> conftest.h
++                return
++            else
++                echo "#define NV_PROC_CREATE_DATA_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++        proc_ops)
++            #
++            # Determine if 'struct proc_ops' is present. procfs was
++            # decoupled from the VFS struct file_operations in Linux 5.6+
++            # (proc_create_data()'s 4th argument, and the fops tables
++            # given to it, switched types: .open/.read/.llseek/.release
++            # became .proc_open/.proc_read/.proc_lseek/.proc_release).
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/proc_fs.h>
++            int conftest_proc_ops(void) {
++                return offsetof(struct proc_ops, proc_open);
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#define NV_PROC_OPS_PRESENT" >> conftest.h
++                return
++            else
++                echo "#undef NV_PROC_OPS_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++        pde_data_lowercase)
++            #
++            # Determine if the pde_data() function (lowercase) is present.
++            # PDE_DATA() (uppercase macro/function) was itself renamed to
++            # pde_data() in later kernels; the fallback chain in this
++            # driver needs to try both, plus the oldest PDE(inode)->data.
++            #
++            echo "$CONFTEST_PREAMBLE
++            #include <linux/proc_fs.h>
++            void conftest_pde_data(void) {
++                pde_data();
++            }" > conftest$$.c
++
++            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
++            rm -f conftest$$.c
++
++            if [ -f conftest$$.o ]; then
++                rm -f conftest$$.o
++                echo "#undef NV_PDE_DATA_LOWERCASE_PRESENT" >> conftest.h
++                return
++            else
++                echo "#define NV_PDE_DATA_LOWERCASE_PRESENT" >> conftest.h
++                return
++            fi
++        ;;
++
++
+         remap_page_range)
+             #
+             # Determine if the remap_page_range() function is present
+@@ -200,8 +681,18 @@
+             #
+             # Determine if the set_pages_uc() function is present.
+             #
++            # set_pages_uc() moved from <asm/cacheflush.h> to
++            # <asm/set_memory.h> in later kernels; without the latter
++            # include, this probe would wrongly conclude "not present"
++            # on kernels that still have the (relocated) function,
++            # sending the driver down the long-dead manual page-table-walk
++            # fallback path in nv_get_phys_address() instead.
++            #
+             echo "$CONFTEST_PREAMBLE
+             #include <asm/cacheflush.h>
++            #if defined(NV_ASM_SET_MEMORY_H_PRESENT)
++            #include <asm/set_memory.h>
++            #endif
+             void conftest_set_pages_uc(void) {
+                 set_pages_uc();
+             }" > conftest$$.c
+@@ -464,9 +955,15 @@
+             #
+             # Determine if the 'pm_message_t' data type is present
+             # and if it as an 'event' member.
++            # NOTE: this probe used to unconditionally #include
++            # <asm/system.h>, which was removed from the kernel long
++            # ago -- that made the probe compile fail regardless of
++            # whether pm_message_t itself is present, always reporting
++            # "absent" (a false negative causing nv-linux.h's own
++            # compat "typedef u32 pm_message_t" fallback to collide
++            # with the kernel's real struct-based pm_message_t).
+             #
+             echo "$CONFTEST_PREAMBLE
+-            #include <asm/system.h>
+             #include <linux/pm.h>
+             void conftest_pm_message_t(pm_message_t state) {
+                 pm_message_t *p = &state;
+@@ -616,7 +1113,7 @@
+             # a match() member.
+             #
+             echo "$CONFTEST_PREAMBLE
+-            #include <acpi/acpi_bus.h>
++            #include <linux/acpi.h>
+             int conftest_acpi_device_ops(void) {
+                 return offsetof(struct acpi_device_ops, match);
+             }" > conftest$$.c
+@@ -640,7 +1137,7 @@
+             # a 'driver_data' member.
+             #
+             echo "$CONFTEST_PREAMBLE
+-            #include <acpi/acpi_drivers.h>
++            #include <linux/acpi.h>
+             int conftest_acpi_device_id(void) {
+                 return offsetof(struct acpi_device_id, driver_data);
+             }" > conftest$$.c
+@@ -858,7 +1355,7 @@
+             #
+ 
+             echo "$CONFTEST_PREAMBLE
+-            #include <acpi/acpi_bus.h>
++            #include <linux/acpi.h>
+             acpi_status acpi_evaluate_integer(acpi_handle h, acpi_string s,
+                 struct acpi_object_list *l, unsigned long long *d) {
+                 return AE_OK;
+@@ -875,7 +1372,7 @@
+             fi
+ 
+             echo "$CONFTEST_PREAMBLE
+-            #include <acpi/acpi_bus.h>
++            #include <linux/acpi.h>
+             acpi_status acpi_evaluate_integer(acpi_handle h, acpi_string s,
+                 struct acpi_object_list *l, unsigned long *d) {
+                 return AE_OK;
+@@ -908,7 +1405,7 @@
+             # and how many arguments it takes.
+             #
+             echo "$CONFTEST_PREAMBLE
+-            #include <acpi/acpi.h>
++            #include <linux/acpi.h>
+             void conftest_acpi_walk_namespace(void) {
+                 acpi_walk_namespace();
+             }" > conftest$$.c
+@@ -923,7 +1420,7 @@
+             fi
+ 
+             echo "$CONFTEST_PREAMBLE
+-            #include <acpi/acpi.h>
++            #include <linux/acpi.h>
+             void conftest_acpi_walk_namespace(void) {
+                 acpi_walk_namespace(0, NULL, 0, NULL, NULL, NULL, NULL);
+             }" > conftest$$.c
+@@ -939,7 +1436,7 @@
+             fi
+ 
+             echo "$CONFTEST_PREAMBLE
+-            #include <acpi/acpi.h>
++            #include <linux/acpi.h>
+             void conftest_acpi_walk_namespace(void) {
+                 acpi_walk_namespace(0, NULL, 0, NULL, NULL, NULL);
+             }" > conftest$$.c
+@@ -1396,6 +1893,18 @@
+             # tree or at headers shipped for a specific kernel.
+             # Determine the kernel version using a compile check.
+             #
++            rm -f conftest.h
++            if [ -f $OUTPUT/include/generated/autoconf.h -o -f $HEADERS/generated/autoconf.h ]; then
++                echo "#define NV_GENERATED_AUTOCONF_H_PRESENT" >> conftest.h
++            else
++                echo "#undef NV_GENERATED_AUTOCONF_H_PRESENT" >> conftest.h
++            fi
++            if [ -f $HEADERS/linux/kconfig.h -o -f $OUTPUT/include/linux/kconfig.h ]; then
++                echo "#define NV_LINUX_KCONFIG_H_PRESENT" >> conftest.h
++            else
++                echo "#undef NV_LINUX_KCONFIG_H_PRESENT" >> conftest.h
++            fi
++
+             echo "$CONFTEST_PREAMBLE
+             #include <linux/version.h>
+             #include <linux/utsname.h>
+@@ -1426,6 +1935,7 @@
+ 
+             rm -f conftest$$.c
+             rm -f conftest$$.o
++            rm -f conftest.h
+         else
+             MAKEFILE=$HEADERS/../Makefile
+             CONFIG=$HEADERS/../.config
+@@ -1577,6 +2087,18 @@
+             # that its configuration doesn't include rivafb using
+             # a compile check.
+             #
++            rm -f conftest.h
++            if [ -f $OUTPUT/include/generated/autoconf.h -o -f $HEADERS/generated/autoconf.h ]; then
++                echo "#define NV_GENERATED_AUTOCONF_H_PRESENT" >> conftest.h
++            else
++                echo "#undef NV_GENERATED_AUTOCONF_H_PRESENT" >> conftest.h
++            fi
++            if [ -f $HEADERS/linux/kconfig.h -o -f $OUTPUT/include/linux/kconfig.h ]; then
++                echo "#define NV_LINUX_KCONFIG_H_PRESENT" >> conftest.h
++            else
++                echo "#undef NV_LINUX_KCONFIG_H_PRESENT" >> conftest.h
++            fi
++
+             echo "$CONFTEST_PREAMBLE
+             #ifdef CONFIG_FB_RIVA
+             #error CONFIG_FB_RIVA defined!
+@@ -1585,6 +2107,7 @@
+ 
+             $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+             rm -f conftest$$.c
++            rm -f conftest.h
+ 
+             if [ -f conftest$$.o ]; then
+                 rm -f conftest$$.o
+@@ -1639,6 +2162,18 @@
+             # that its configuration doesn't include nvidiafb using
+             # a compile check.
+             #
++            rm -f conftest.h
++            if [ -f $OUTPUT/include/generated/autoconf.h -o -f $HEADERS/generated/autoconf.h ]; then
++                echo "#define NV_GENERATED_AUTOCONF_H_PRESENT" >> conftest.h
++            else
++                echo "#undef NV_GENERATED_AUTOCONF_H_PRESENT" >> conftest.h
++            fi
++            if [ -f $HEADERS/linux/kconfig.h -o -f $OUTPUT/include/linux/kconfig.h ]; then
++                echo "#define NV_LINUX_KCONFIG_H_PRESENT" >> conftest.h
++            else
++                echo "#undef NV_LINUX_KCONFIG_H_PRESENT" >> conftest.h
++            fi
++
+             echo "$CONFTEST_PREAMBLE
+             #ifdef CONFIG_FB_NVIDIA
+             #error CONFIG_FB_NVIDIA defined!
+@@ -1647,6 +2182,7 @@
+ 
+             $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+             rm -f conftest$$.c
++            rm -f conftest.h
+ 
+             if [ -f conftest$$.o ]; then
+                 rm -f conftest$$.o
+@@ -1743,8 +2279,18 @@
+         shift 5
+ 
+         rm -f conftest.h
+-        for i in $*; do compile_test $i; done
+ 
++        #
++        # The FILES-based presence defines (NV_GENERATED_AUTOCONF_H_PRESENT
++        # in particular) must be written to conftest.h *before* any
++        # individual compile_test() runs, not after: CONFTEST_PREAMBLE's
++        # own #include "conftest.h" + autoconf.h chain (added so probes can
++        # see each other's NV_XXX_PRESENT results) depends on
++        # NV_GENERATED_AUTOCONF_H_PRESENT to pick <generated/autoconf.h>
++        # over the long-gone <linux/autoconf.h> -- computing it after the
++        # probes ran made every single probe's own preamble hard-fail on
++        # "linux/autoconf.h: No such file or directory" instead.
++        #
+         for FILE in $FILES; do
+             FILE_DEFINE=NV_`echo $FILE | tr '/.' '_' | tr 'a-z' 'A-Z'`_PRESENT
+             if [ -f $HEADERS/$FILE -o -f $OUTPUT/include/$FILE ]; then
+@@ -1754,6 +2300,8 @@
+             fi
+         done
+ 
++        for i in $*; do compile_test $i; done
++
+         if [ -n "$SHOW_COMPILE_TEST_RESULTS" -a -f conftest.h ]; then
+             cat conftest.h
+         fi
+diff -ru a/Makefile.kbuild b/Makefile.kbuild
+--- a/Makefile.kbuild	2026-09-17 19:09:23.907315930 +0200
++++ b/Makefile.kbuild	2026-09-17 18:36:00.916771911 +0200
+@@ -180,6 +180,10 @@
+ 
+ ifneq ($(NV_IS_KERNEL_2_4), 1)
+  COMPILE_TESTS = \
++	asm_special_insns_h \
++	asm_set_memory_h \
++	asm_kmap_types_h \
++	arch_phys_wc_add \
+ 	remap_page_range \
+ 	remap_pfn_range \
+ 	vmap \
+@@ -195,15 +199,27 @@
+ 	acquire_console_sem \
+ 	kmem_cache_create \
+ 	on_each_cpu \
++	on_each_cpu_returns_int \
+ 	smp_call_function \
++	smp_call_function_returns_int \
+ 	ioremap_cache \
+ 	ioremap_wc \
++	ioremap_nocache \
+ 	proc_dir_entry \
++	proc_ops \
++	proc_create_data \
++	pde_data_lowercase \
+ 	acpi_walk_namespace \
+ 	agp_memory \
+ 	scatterlist \
+ 	file_operations \
+-	sg_init_table
++	file_f_dentry \
++	sg_init_table \
++	spin_unlock_wait \
++	register_cpu_notifier \
++	vm_flags_set \
++	vmalloc_has_pgprot_arg \
++	pci_map_sg
+ else
+  COMPILE_TESTS = \
+ 	remap_page_range \
+@@ -220,8 +236,26 @@
+ # to satisfy KBUILD requirements and to support NVIDIA specifics.
+ #
+ 
+-$(obj)/$(RESMAN_CORE_OBJS):
+-	cp $(src)/$(RESMAN_CORE_OBJS) $(obj)/$(RESMAN_CORE_OBJS)
++#
++# RESMAN_CORE_OBJS (nv-kernel.o, the closed-source RM core) is not built by
++# a normal compile or if_changed rule, so newer kbuild's modpost never
++# records a .cmd file for it and hard-fails ("could not find
++# .nv-kernel.o.cmd"). Route it through if_changed (which always records
++# a .cmd regardless of what the command does) with a copy that no-ops
++# when $(src) and $(obj) are the same directory, as they are for a
++# normal out-of-tree module build -- a plain 'cp same-file same-file'
++# errors out on some cp implementations.
++#
++targets += $(RESMAN_CORE_OBJS)
++
++quiet_cmd_nv_core_objs_copy = CP      $@
++      cmd_nv_core_objs_copy = \
++	if [ "$(abspath $(src)/$(RESMAN_CORE_OBJS))" != "$(abspath $(obj)/$(RESMAN_CORE_OBJS))" ]; then \
++	    cp $(src)/$(RESMAN_CORE_OBJS) $(obj)/$(RESMAN_CORE_OBJS); \
++	fi
++
++$(obj)/$(RESMAN_CORE_OBJS): FORCE
++	$(call if_changed,nv_core_objs_copy)
+ 
+ $(obj)/$(VERSION_HEADER):
+ 	@ echo \#define NV_COMPILER \"`$(CC) -v 2>&1 | tail -n 1`\" > $@
+diff -ru a/nv.c b/nv.c
+--- a/nv.c	2011-07-15 09:13:42.000000000 +0200
++++ b/nv.c	2026-09-17 19:17:08.526390176 +0200
+@@ -230,7 +230,9 @@
+ static void     nvos_proc_create(void);
+ static void     nvos_proc_add_text_file(struct proc_dir_entry *,
+                     const char *, const char *);
++#if defined(CONFIG_PROC_FS) && !defined(NV_PROC_CREATE_DATA_PRESENT)
+ static void     nvos_proc_remove_all(struct proc_dir_entry *);
++#endif
+ static void     nvos_proc_remove(void);
+ static int      nvos_count_devices(void);
+ 
+@@ -267,7 +269,11 @@
+ #else
+ irqreturn_t   nv_kern_isr(int, void *);
+ #endif
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
+ void          nv_kern_rc_timer(unsigned long);
++#else
++void          nv_kern_rc_timer(struct timer_list *);
++#endif
+ #if defined(NV_PM_SUPPORT_OLD_STYLE_APM)
+ static int    nv_kern_apm_event(struct pm_dev *, pm_request_t, void *);
+ #endif
+@@ -565,9 +571,212 @@
+     return NULL;
+ }
+ 
++#if defined(NV_PROC_CREATE_DATA_PRESENT)
++#if defined(NV_PDE_DATA_LOWERCASE_PRESENT)
++# define NV_PDE_DATA(inode) pde_data(inode)
++#else
++# define NV_PDE_DATA(inode) PDE_DATA(inode)
++#endif
++
++/*
++ * create_proc_entry() and struct proc_dir_entry's directly-assignable
++ * .read_proc/.data/.owner/.next/.subdir fields were all removed; modern
++ * procfs needs a proc_ops (or file_operations, pre-5.6) table plus
++ * proc_create_data()/proc_mkdir(), and a seq_file "show" callback rather
++ * than a raw-buffer one. Rather than rewrite every nv_kern_read_*()
++ * function (which take the classic read_proc_t "write into this
++ * PAGE_SIZE buffer, return the length" shape and don't use start/off/
++ * count -- single-shot output, never paginated), wrap that shape in a
++ * shim: the show callback calls the original function into a fresh page
++ * and seq_write()s the result, so every read_proc_t function body stays
++ * exactly as NVIDIA wrote it.
++ */
++typedef int (*nv_read_proc_t)(char *, char **, off_t, int, int *, void *);
++
++typedef struct {
++    nv_read_proc_t read_proc;
++    void *data;
++} nv_proc_shim_t;
++
++static int nv_proc_shim_show(struct seq_file *m, void *v)
++{
++    nv_proc_shim_t *shim = m->private;
++    char *page;
++    char *start = NULL;
++    int eof = 0;
++    int len;
++
++    page = (char *)__get_free_page(GFP_KERNEL);
++    if (!page)
++        return -ENOMEM;
++
++    len = shim->read_proc(page, &start, 0, PAGE_SIZE, &eof, shim->data);
++    if (len > 0)
++        seq_write(m, start ? start : page, len);
++
++    free_page((unsigned long)page);
++    return 0;
++}
++
++static int nv_proc_shim_open(struct inode *inode, struct file *file)
++{
++    return single_open(file, nv_proc_shim_show, NV_PDE_DATA(inode));
++}
++
++#if defined(NV_PROC_OPS_PRESENT)
++static const struct proc_ops nv_proc_shim_fops = {
++    .proc_open    = nv_proc_shim_open,
++    .proc_read    = seq_read,
++    .proc_lseek   = seq_lseek,
++    .proc_release = single_release,
++};
++#else
++static const struct file_operations nv_proc_shim_fops = {
++    .owner   = THIS_MODULE,
++    .open    = nv_proc_shim_open,
++    .read    = seq_read,
++    .llseek  = seq_lseek,
++    .release = single_release,
++};
++#endif
++
++/* returns NULL on failure, like create_proc_entry() did */
++static struct proc_dir_entry *nv_create_proc_read_entry(
++    const char *name,
++    struct proc_dir_entry *parent,
++    int flags,
++    nv_read_proc_t read_proc,
++    void *data
++)
++{
++    nv_proc_shim_t *shim;
++    struct proc_dir_entry *entry;
++
++    NV_KMALLOC(shim, sizeof(nv_proc_shim_t));
++    if (!shim)
++        return NULL;
++
++    shim->read_proc = read_proc;
++    shim->data = data;
++
++    entry = proc_create_data(name, flags, parent, &nv_proc_shim_fops, shim);
++    if (!entry)
++        NV_KFREE(shim, sizeof(nv_proc_shim_t));
++
++    return entry;
++}
++#endif /* defined(NV_PROC_CREATE_DATA_PRESENT) */
++
+ static void nvos_proc_create(void)
+ {
+ #ifdef CONFIG_PROC_FS
++#if defined(NV_PROC_CREATE_DATA_PRESENT)
++    /*
++     * Modern procfs: proc_mkdir() for directories (always created with
++     * the standard S_IRUGO|S_IXUGO mode, matching the old d_flags
++     * exactly), nv_create_proc_read_entry() (see above) for files backed
++     * by the classic read_proc_t-shaped nv_kern_read_*() functions.
++     */
++    struct pci_dev *dev;
++    U032 j, i = 0;
++    char name[6];
++
++    struct proc_dir_entry *entry;
++    struct proc_dir_entry *proc_nvidia_agp, *proc_nvidia_cards;
++
++    int flags = S_IRUGO;
++
++    nv_state_t *nv;
++    nv_linux_state_t *nvl;
++
++    proc_nvidia = proc_mkdir("driver/nvidia", NULL);
++    if (!proc_nvidia)
++        goto failed;
++
++    proc_nvidia_cards = proc_mkdir("cards", proc_nvidia);
++    if (!proc_nvidia_cards)
++        goto failed;
++
++    proc_nvidia_warnings = proc_mkdir("warnings", proc_nvidia);
++    if (!proc_nvidia_warnings)
++        goto failed;
++
++    proc_nvidia_patches = proc_mkdir("patches", proc_nvidia);
++    if (!proc_nvidia_patches)
++        goto failed;
++
++    for (j = 0; j < num_nv_devices; j++)
++    {
++        nvl = &nv_linux_devices[j];
++        nv = NV_STATE_PTR(nvl);
++
++        dev = nv_get_pci_device(nv);
++        if (!dev)
++            break;
++
++        sprintf(name, "%d", i++);
++        entry = nv_create_proc_read_entry(name, proc_nvidia_cards, flags,
++                nv_kern_read_cardinfo, nv);
++        if (!entry) {
++            NV_PCI_DEV_PUT(dev);
++            goto failed;
++        }
++
++        if (nvos_find_agp_capability(dev)) {
++            /*
++             * Create the /proc/driver/nvidia/agp/{status,host-bridge,card}
++             * entries now that we know there's AGP hardware.
++             */
++            entry = proc_mkdir("agp", proc_nvidia);
++            if (!entry) {
++                NV_PCI_DEV_PUT(dev);
++                goto failed;
++            }
++            proc_nvidia_agp = entry;
++
++            entry = nv_create_proc_read_entry("status", proc_nvidia_agp,
++                    flags, nv_kern_read_status, nv);
++            if (!entry) {
++                NV_PCI_DEV_PUT(dev);
++                goto failed;
++            }
++
++            entry = nv_create_proc_read_entry("host-bridge", proc_nvidia_agp,
++                    flags, nv_kern_read_agpinfo, NULL);
++            if (!entry) {
++                NV_PCI_DEV_PUT(dev);
++                goto failed;
++            }
++
++            entry = nv_create_proc_read_entry("card", proc_nvidia_agp,
++                    flags, nv_kern_read_agpinfo, nv);
++            if (!entry) {
++                NV_PCI_DEV_PUT(dev);
++                goto failed;
++            }
++        }
++
++        NV_PCI_DEV_PUT(dev);
++    }
++
++    entry = nv_create_proc_read_entry("version", proc_nvidia, flags,
++            nv_kern_read_version, NULL);
++    if (!entry)
++        goto failed;
++
++    entry = nv_create_proc_read_entry("registry", proc_nvidia, flags,
++            nv_kern_read_registry, NULL);
++    if (!entry)
++        goto failed;
++
++    return;
++
++failed:
++    nv_printf(NV_DBG_ERRORS, "NVRM: failed to create /proc entries!\n");
++    if (proc_nvidia)
++        remove_proc_subtree("driver/nvidia", NULL);
++
++#else /* !NV_PROC_CREATE_DATA_PRESENT: original create_proc_entry()-based code */
+     struct pci_dev *dev;
+     U032 j, i = 0;
+     char name[6];
+@@ -712,7 +921,8 @@
+ failed:
+     nv_printf(NV_DBG_ERRORS, "NVRM: failed to create /proc entries!\n");
+     nvos_proc_remove_all(proc_nvidia);
+-#endif
++#endif /* NV_PROC_CREATE_DATA_PRESENT */
++#endif /* CONFIG_PROC_FS */
+ }
+ 
+ static void
+@@ -723,6 +933,10 @@
+ )
+ {
+ #ifdef CONFIG_PROC_FS
++#if defined(NV_PROC_CREATE_DATA_PRESENT)
++    nv_create_proc_read_entry(filename, parent, S_IRUGO,
++            nv_kern_read_text_file, (void *)text);
++#else
+     struct proc_dir_entry *entry;
+ 
+     /* world readable file */
+@@ -736,10 +950,11 @@
+ #if defined(NV_PROC_DIR_ENTRY_HAS_OWNER)
+     entry->owner = THIS_MODULE;
+ #endif
++#endif /* NV_PROC_CREATE_DATA_PRESENT */
+ #endif
+ }
+ 
+-#ifdef CONFIG_PROC_FS
++#if defined(CONFIG_PROC_FS) && !defined(NV_PROC_CREATE_DATA_PRESENT)
+ static void nvos_proc_remove_all(struct proc_dir_entry *entry)
+ {
+     while (entry) {
+@@ -757,8 +972,13 @@
+ static void nvos_proc_remove(void)
+ {
+ #ifdef CONFIG_PROC_FS
++#if defined(NV_PROC_CREATE_DATA_PRESENT)
++    if (proc_nvidia)
++        remove_proc_subtree("driver/nvidia", NULL);
++#else
+     nvos_proc_remove_all(proc_nvidia);
+ #endif
++#endif
+ }
+ 
+ /*
+@@ -871,14 +1091,14 @@
+     wbinvd();
+     *cr4 = read_cr4();
+     if (*cr4 & 0x80) write_cr4(*cr4 & ~0x80);
+-    __flush_tlb();
++    NV_FLUSH_TLB();
+ }
+ 
+ static inline void __nv_enable_caches(unsigned long cr4)
+ {
+     unsigned long cr0 = read_cr0();
+     wbinvd();
+-    __flush_tlb();
++    NV_FLUSH_TLB();
+     write_cr0((cr0 & 0x9fffffff));
+     if (cr4 & 0x80) write_cr4(cr4);
+ }
+@@ -1282,7 +1502,8 @@
+ #endif
+ }
+ 
+-#if defined(NV_ENABLE_PAT_SUPPORT) && defined(CONFIG_HOTPLUG_CPU)
++#if defined(NV_ENABLE_PAT_SUPPORT) && defined(CONFIG_HOTPLUG_CPU) && \
++    defined(NV_REGISTER_CPU_NOTIFIER_PRESENT)
+ static int
+ nv_kern_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ {
+@@ -1558,7 +1779,8 @@
+     if (!disable_pat)
+     {
+         __nv_enable_pat_support();
+-#if defined(NV_ENABLE_PAT_SUPPORT) && defined(CONFIG_HOTPLUG_CPU)
++#if defined(NV_ENABLE_PAT_SUPPORT) && defined(CONFIG_HOTPLUG_CPU) && \
++    defined(NV_REGISTER_CPU_NOTIFIER_PRESENT)
+         if (nv_pat_mode == NV_PAT_MODE_BUILTIN)
+         {
+             if (register_hotcpu_notifier(&nv_hotcpu_nfb) != 0)
+@@ -1681,7 +1903,8 @@
+     if (nv_pat_mode == NV_PAT_MODE_BUILTIN)
+     {
+         __nv_disable_pat_support();
+-#if defined(NV_ENABLE_PAT_SUPPORT) && defined(CONFIG_HOTPLUG_CPU)
++#if defined(NV_ENABLE_PAT_SUPPORT) && defined(CONFIG_HOTPLUG_CPU) && \
++    defined(NV_REGISTER_CPU_NOTIFIER_PRESENT)
+         unregister_hotcpu_notifier(&nv_hotcpu_nfb);
+ #endif
+     }
+@@ -2053,7 +2276,7 @@
+          * Disable this device's tasklet to make sure that no bottom half will
+          * run with undefined device state.
+          */
+-        tasklet_disable(&nvl->tasklet);
++        NV_TASKLET_DISABLE(&nvl->tasklet);
+ 
+         /*
+          * Free the IRQ, which may block until all pending interrupt processing
+@@ -2230,7 +2453,7 @@
+             return -EAGAIN;
+ 
+         /* mark it as IO so that we don't dump it on core dump */
+-        vma->vm_flags |= VM_IO;
++        NV_VMA_SET_FLAGS(vma, VM_IO);
+     }
+ 
+     /* NV fb space */
+@@ -2255,7 +2478,7 @@
+             return -EAGAIN;
+ 
+         // mark it as IO so that we don't dump it on core dump
+-        vma->vm_flags |= VM_IO;
++        NV_VMA_SET_FLAGS(vma, VM_IO);
+     }
+ 
+     /* AGP allocator */
+@@ -2309,7 +2532,7 @@
+         nv_vm_list_page_count(at->page_table, at->num_pages);
+ 
+         // mark it as IO so that we don't dump it on core dump
+-        vma->vm_flags |= VM_IO;
++        NV_VMA_SET_FLAGS(vma, VM_IO);
+     }
+ 
+     /* Magic allocator */
+@@ -2379,7 +2602,7 @@
+ 
+         /* prevent the swapper from swapping it out */
+         /* mark the memory i/o so the buffers aren't dumped on core dumps */
+-        vma->vm_flags |= (VM_IO | VM_LOCKED | VM_RESERVED);
++        NV_VMA_SET_FLAGS(vma, (VM_IO | VM_LOCKED | VM_RESERVED));
+     }
+ 
+     NV_VMA_FILE(vma) = file;
+@@ -2399,7 +2622,7 @@
+ 
+     nvl = NVL_FROM_FILEP(file);
+ 
+-    if (NV_IS_CONTROL_DEVICE(file->f_dentry->d_inode))
++    if (NV_IS_CONTROL_DEVICE(NV_FILE_DENTRY(file)->d_inode))
+         return nv_kern_ctl_poll(file, wait);
+ 
+     nvfp = NV_GET_NVFP(file);
+@@ -2614,7 +2837,7 @@
+     unsigned long i_arg
+ )
+ {
+-    return nv_kern_ioctl(file->f_dentry->d_inode, file, cmd, i_arg);
++    return nv_kern_ioctl(NV_FILE_DENTRY(file)->d_inode, file, cmd, i_arg);
+ }
+ 
+ long nv_kern_compat_ioctl(
+@@ -2623,7 +2846,7 @@
+     unsigned long i_arg
+ )
+ {
+-    return nv_kern_ioctl(file->f_dentry->d_inode, file, cmd, i_arg);
++    return nv_kern_ioctl(NV_FILE_DENTRY(file)->d_inode, file, cmd, i_arg);
+ }
+ 
+ /*
+@@ -2668,15 +2891,23 @@
+ }
+ 
+ void nv_kern_rc_timer(
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
+     unsigned long data
++#else
++    struct timer_list *t_list
++#endif
+ )
+ {
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
+     nv_linux_state_t *nvl = (nv_linux_state_t *) data;
++#else
++    nv_linux_state_t *nvl = from_timer(nvl, t_list, rc_timer);
++#endif
+ 
+     // nv_printf(NV_DBG_INFO, "NVRM: rc timer\n");
+ 
+-    nv_verify_pci_config((nv_state_t *) data);
+-    rm_run_rc_callback((nv_state_t *) data);
++    nv_verify_pci_config((nv_state_t *) nvl);
++    rm_run_rc_callback((nv_state_t *) nvl);
+     mod_timer(&nvl->rc_timer, jiffies + HZ);  /* set another timeout in 1 second */
+ }
+ 
+@@ -3340,6 +3571,20 @@
+     int kern
+ )
+ {
++#if defined(NV_SET_PAGES_UC_PRESENT)
++    /*
++     * On kernels new enough to have set_pages_uc(), the manual
++     * pgd/pmd/pte walk below is both unnecessary (callers have a
++     * working fast path already) and increasingly unable to compile
++     * or link cleanly (pud_offset()'s 4/5-level pagetable signature,
++     * pte_offset_map()'s RCU-based reimplementation pulling in a
++     * GPL-only symbol) -- disable it entirely here, matching the
++     * identical simplification already shipped in 173xx's nv.c.
++     */
++    nv_printf(NV_DBG_ERRORS,
++        "NVRM: can't translate address in _get_phys_address()!\n");
++    return 0;
++#else
+     struct mm_struct *mm;
+     pgd_t *pgd = NULL;
+     pmd_t *pmd = NULL;
+@@ -3349,18 +3594,10 @@
+     if (!kern)
+     {
+         mm = current->mm;
+-        down_read(&mm->mmap_sem);
++        NV_MMAP_READ_LOCK(mm);
+     }
+     else
+-    {
+-#if defined(NV_SET_PAGES_UC_PRESENT)
+-        nv_printf(NV_DBG_ERRORS,
+-            "NVRM: can't translate KVA in nv_get_phys_address()!\n");
+-        return 0;
+-#else
+         mm = NULL;
+-#endif
+-    }
+ 
+     pgd = NV_PGD_OFFSET(address, kern, mm);
+     if (!NV_PGD_PRESENT(pgd))
+@@ -3382,13 +3619,14 @@
+ #endif
+ 
+     if (!kern)
+-        up_read(&mm->mmap_sem);
++        NV_MMAP_READ_UNLOCK(mm);
+     return retval;
+ 
+ failed:
+     if (!kern)
+-        up_read(&mm->mmap_sem);
++        NV_MMAP_READ_UNLOCK(mm);
+     return 0;
++#endif /* NV_SET_PAGES_UC_PRESENT */
+ }
+ 
+ unsigned long NV_API_CALL nv_get_kern_phys_address(
+@@ -4015,9 +4253,13 @@
+         return -1;
+ 
+     nv_printf(NV_DBG_INFO, "NVRM: initializing rc timer\n");
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
+     init_timer(&nvl->rc_timer);
+     nvl->rc_timer.function = nv_kern_rc_timer;
+     nvl->rc_timer.data = (unsigned long) nv;
++#else
++    timer_setup(&nvl->rc_timer, nv_kern_rc_timer, 0);
++#endif
+     nv->rc_timer_enabled = 1;
+     mod_timer(&nvl->rc_timer, jiffies + HZ); /* set our timeout for 1 second */
+     nv_printf(NV_DBG_INFO, "NVRM: rc timer initialized\n");
+diff -ru a/nv.h b/nv.h
+--- a/nv.h	2011-07-15 09:13:42.000000000 +0200
++++ b/nv.h	2026-09-17 18:34:04.162861314 +0200
+@@ -13,6 +13,7 @@
+ #define _NV_H_
+ 
+ #include <nvtypes.h>
++#include <linux/version.h>
+ 
+ #if !defined(NV_MIN)
+ #define NV_MIN(_a,_b) ((_a) < (_b) ? (_a) : (_b))
+@@ -335,6 +336,45 @@
+ #define NV_MAX_ISR_DELAY_US           20000
+ #define NV_MAX_ISR_DELAY_MS           (NV_MAX_ISR_DELAY_US / 1000)
+ 
++/*
++ * Linux 5.0 removed do_gettimeofday()/struct timeval from the kernel; by
++ * 5.6 struct timeval is gone entirely. Above that, NV_TIMER* operate on
++ * struct timespec64 (tv_nsec) via ktime_get_real_ts64() instead.
++ */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
++#define NV_TIMESPEC64 1
++#endif
++
++#if defined(NV_TIMESPEC64)
++
++#define NV_TIMERCMP(a, b, CMP)                                              \
++    (((a)->tv_sec == (b)->tv_sec) ?                                         \
++        ((a)->tv_nsec CMP (b)->tv_nsec) : ((a)->tv_sec CMP (b)->tv_sec))
++
++#define NV_TIMERADD(a, b, result)                                           \
++    {                                                                       \
++        (result)->tv_sec = (a)->tv_sec + (b)->tv_sec;                       \
++        (result)->tv_nsec = (a)->tv_nsec + (b)->tv_nsec;                    \
++        if ((result)->tv_nsec >= NSEC_PER_SEC)                              \
++        {                                                                   \
++            ++(result)->tv_sec;                                             \
++            (result)->tv_nsec -= NSEC_PER_SEC;                              \
++        }                                                                   \
++    }
++
++#define NV_TIMERSUB(a, b, result)                                           \
++    {                                                                       \
++        (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;                       \
++        (result)->tv_nsec = (a)->tv_nsec - (b)->tv_nsec;                    \
++        if ((result)->tv_nsec < 0)                                         \
++        {                                                                  \
++          --(result)->tv_sec;                                              \
++          (result)->tv_nsec += NSEC_PER_SEC;                               \
++        }                                                                  \
++    }
++
++#else /* !NV_TIMESPEC64 */
++
+ #define NV_TIMERCMP(a, b, CMP)                                              \
+     (((a)->tv_sec == (b)->tv_sec) ?                                         \
+         ((a)->tv_usec CMP (b)->tv_usec) : ((a)->tv_sec CMP (b)->tv_sec))
+@@ -361,6 +401,8 @@
+         }                                                                   \
+     }
+ 
++#endif /* NV_TIMESPEC64 */
++
+ /*
+  * driver internal interfaces
+  */
+Csak ebben: b: nvidia.mod
+Csak ebben: b: nvidia.mod.c
+diff -ru a/nv-linux.h b/nv-linux.h
+--- a/nv-linux.h	2011-07-15 09:13:42.000000000 +0200
++++ b/nv-linux.h	2026-09-17 19:17:08.525043600 +0200
+@@ -81,21 +81,26 @@
+ #include <linux/sched.h>            /* suser(), capable() replacement   */
+ #include <linux/moduleparam.h>      /* module_param()                   */
+ #include <asm/tlbflush.h>           /* flush_tlb(), flush_tlb_all()     */
++#if defined(NV_ASM_KMAP_TYPES_H_PRESENT)
+ #include <asm/kmap_types.h>         /* page table entry lookup          */
+ #endif
++#endif
+ 
+ #include <linux/pci.h>              /* pci_find_class, etc              */
+ #include <linux/interrupt.h>        /* tasklets, interrupt helpers      */
+ #include <linux/timer.h>
+ 
+ #include <asm/div64.h>              /* do_div()                         */
++#if defined(NV_ASM_SYSTEM_H_PRESENT)
+ #include <asm/system.h>             /* cli, sli, save_flags             */
++#endif
+ #include <asm/io.h>                 /* ioremap, virt_to_phys            */
+ #include <asm/uaccess.h>            /* access_ok                        */
+ #include <asm/page.h>               /* PAGE_OFFSET                      */
+ #include <asm/pgtable.h>            /* pte bit definitions              */
+ 
+-#if defined(NVCPU_X86_64) && !defined(KERNEL_2_4) && !defined(HAVE_COMPAT_IOCTL)
++#if defined(NVCPU_X86_64) && !defined(KERNEL_2_4) && \
++  !defined(NV_FILE_OPERATIONS_HAS_COMPAT_IOCTL)
+ #include <linux/syscalls.h>         /* sys_ioctl()                      */
+ #include <linux/ioctl32.h>          /* register_ioctl32_conversion()    */
+ #endif
+@@ -124,6 +129,7 @@
+ 
+ #ifdef CONFIG_PROC_FS
+ #include <linux/proc_fs.h>
++#include <linux/seq_file.h>
+ #endif
+ 
+ #ifdef CONFIG_MTRR
+@@ -192,19 +198,50 @@
+ #define NV_SPIN_UNLOCK_IRQRESTORE(lock,flags) spin_unlock_irqrestore(lock,flags)
+ #define NV_SPIN_LOCK(lock)        spin_lock(lock)
+ #define NV_SPIN_UNLOCK(lock)      spin_unlock(lock)
++#if defined(NV_SPIN_UNLOCK_WAIT_PRESENT)
+ #define NV_SPIN_UNLOCK_WAIT(lock) spin_unlock_wait(lock)
++#else
++#define NV_SPIN_UNLOCK_WAIT(lock) do { spin_lock(lock); spin_unlock(lock); } while (0)
++#endif
+ #endif
+ 
+-#if defined(NVCPU_X86)
++/*
++ * tasklet_disable() waits for any in-flight run to finish via
++ * tasklet_unlock_wait(), which on later kernels is an out-of-line
++ * function EXPORT_SYMBOL_GPL'd (it was a plain busy-wait static inline,
++ * calling only public bitops, on older kernels -- only the *linkage*
++ * changed, not the actual wait semantics). A proprietary-licensed
++ * module can't call it directly. Open-code the identical busy-wait
++ * against the public TASKLET_STATE_RUN bit instead, matching exactly
++ * what the older inline tasklet_unlock_wait() always did.
++ */
++#define NV_TASKLET_DISABLE(t)                                     \
++    do {                                                          \
++        tasklet_disable_nosync(t);                                \
++        while (test_bit(TASKLET_STATE_RUN, &(t)->state))          \
++            cpu_relax();                                          \
++        smp_mb();                                                 \
++    } while (0)
++
++#if defined(NVCPU_X86) || defined(NVCPU_X86_64)
++/*
++ * A CR4 move ignores any operand-size suffix and is always the native
++ * register width (32-bit in 32-bit/compat mode, 64-bit in 64-bit mode);
++ * newer assemblers reject an explicit "movl" as inconsistent with a
++ * 64-bit register operand ("Error: unsupported instruction `mov'") on
++ * x86_64. Using plain "mov" (no suffix) with an "unsigned long" operand
++ * lets the assembler infer the right width from the register class on
++ * both i386 and x86_64.
++ */
+ #ifndef write_cr4
+-#define write_cr4(x) __asm__ ("movl %0,%%cr4" :: "r" (x));
++#define write_cr4(x) __asm__ ("mov %0,%%cr4" :: "r" ((unsigned long)(x)));
+ #endif
+ 
+ #ifndef read_cr4
+ #define read_cr4()                                  \
+  ({                                                 \
+-      unsigned int __cr4;                           \
+-      __asm__ ("movl %%cr4,%0" : "=r" (__cr4));     \
++      unsigned long __cr4;                          \
++      __asm__ ("mov %%cr4,%0" : "=r" (__cr4));      \
+       __cr4;                                        \
+   })
+ #endif
+@@ -212,19 +249,90 @@
+ #ifndef wbinvd
+ #define wbinvd() __asm__ __volatile__("wbinvd" ::: "memory");
+ #endif
+-#endif /* defined(NVCPU_X86) */
++
++/*
++ * __flush_tlb() (a full local-TLB flush by reloading CR3) was a kernel-
++ * internal helper that is no longer available to modules on newer
++ * kernels. Do exactly what it always did: reload CR3. This needs no
++ * kernel export and works identically on every kernel version.
++ */
++#define NV_FLUSH_TLB()                                            \
++    do {                                                          \
++        unsigned long __cr3;                                      \
++        __asm__ __volatile__ ("mov %%cr3, %0" : "=r" (__cr3));    \
++        __asm__ __volatile__ ("mov %0, %%cr3" :: "r" (__cr3) : "memory"); \
++    } while (0)
++#endif /* defined(NVCPU_X86) || defined(NVCPU_X86_64) */
++
++/*
++ * mm->mmap_sem was replaced by the mmap_lock API (mmap_read_lock() etc.)
++ * in Linux 5.8, renaming the field itself (mm->mmap_lock) so the old
++ * down_read(&mm->mmap_sem) spelling no longer compiles at all.
++ */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
++#define NV_MMAP_READ_LOCK(mm)     mmap_read_lock(mm)
++#define NV_MMAP_READ_UNLOCK(mm)   mmap_read_unlock(mm)
++#else
++#define NV_MMAP_READ_LOCK(mm)     down_read(&(mm)->mmap_sem)
++#define NV_MMAP_READ_UNLOCK(mm)   up_read(&(mm)->mmap_sem)
++#endif
++
++/* VM_RESERVED was folded into other flags and removed; every use here is
++ * OR'd into vm_flags, so a 0 fallback is a safe no-op (matches the
++ * identical compat shim already used by nvidia-legacy's 173xx series). */
++#if !defined(VM_RESERVED)
++#define VM_RESERVED    0x00000000
++#endif
++
++/*
++ * vma->vm_flags became a read-only accessor in Linux 6.3+; direct '|='
++ * is then a compile error ("assignment of read-only member 'vm_flags'").
++ * vm_flags_set() is the replacement.
++ */
++#if defined(NV_VM_FLAGS_SET_PRESENT)
++#define NV_VMA_SET_FLAGS(vma, flags) vm_flags_set(vma, flags)
++#else
++#define NV_VMA_SET_FLAGS(vma, flags) do { (vma)->vm_flags |= (flags); } while (0)
++#endif
++
++#if defined(NV_FILE_HAS_F_DENTRY)
++#define NV_FILE_DENTRY(file) ((file)->f_dentry)
++#else
++#define NV_FILE_DENTRY(file) ((file)->f_path.dentry)
++#endif
++
++#ifdef CONFIG_MTRR
++/*
++ * mtrr_add()/mtrr_del() are declared 'extern' whenever CONFIG_MTRR=y, but
++ * on many distro kernels they are no longer exported for use by
++ * out-of-tree modules (a link failure, not a compile failure).
++ * arch_phys_wc_add()/arch_phys_wc_del() are the maintained, always-
++ * exported replacement; NV_MTRR_DEL needs the handle NV_MTRR_ADD
++ * returned (old mtrr_del()'s reg=-1 base/size lookup has no equivalent
++ * in the new API), so callers must save it themselves.
++ */
++#if defined(NV_ARCH_PHYS_WC_ADD_PRESENT)
++#define NV_MTRR_ADD(base, size) arch_phys_wc_add(base, size)
++#define NV_MTRR_DEL(handle, base, size) arch_phys_wc_del(handle)
++#else
++#define NV_MTRR_ADD(base, size) mtrr_add(base, size, MTRR_TYPE_WRCOMB, 0)
++#define NV_MTRR_DEL(handle, base, size) mtrr_del(-1, base, size)
++#endif
++#endif /* CONFIG_MTRR */
+ 
+ #ifndef get_cpu
+ #define get_cpu() smp_processor_id()
+ #define put_cpu()
+ #endif
+ 
++#if defined(NV_REGISTER_CPU_NOTIFIER_PRESENT)
+ #if !defined(unregister_hotcpu_notifier)
+ #define unregister_hotcpu_notifier unregister_cpu_notifier
+ #endif
+ #if !defined(register_hotcpu_notifier)
+ #define register_hotcpu_notifier register_cpu_notifier
+ #endif
++#endif /* defined(NV_REGISTER_CPU_NOTIFIER_PRESENT) */
+ 
+ #if !defined (list_for_each)
+ #define list_for_each(pos, head) \
+@@ -499,12 +607,25 @@
+ #  define KM_FREE_RECORD(a,b,c)
+ #endif
+ 
++#if defined(NV_VMALLOC_HAS_PGPROT_ARG)
+ #define NV_VMALLOC(ptr, size, cached)                                   \
+     {                                                                   \
+         pgprot_t __prot = (cached) ? PAGE_KERNEL : PAGE_KERNEL_NOCACHE; \
+         (ptr) = __vmalloc(size, GFP_KERNEL, __prot);                    \
+         VM_ALLOC_RECORD(ptr, size, "vm_vmalloc");                       \
+     }
++#else
++/*
++ * __vmalloc() lost its pgprot_t argument in Linux 5.8 (it is always
++ * PAGE_KERNEL now); every caller in this driver passes cached=TRUE, so
++ * this is exact for actual usage, not just a fallback approximation.
++ */
++#define NV_VMALLOC(ptr, size, cached)                                   \
++    {                                                                   \
++        (ptr) = vmalloc(size);                                          \
++        VM_ALLOC_RECORD(ptr, size, "vm_vmalloc");                       \
++    }
++#endif
+ 
+ #define NV_VFREE(ptr, size)                         \
+     {                                               \
+@@ -518,11 +639,21 @@
+         VM_ALLOC_RECORD(ptr, size, "vm_ioremap"); \
+     }
+ 
++#if defined(NV_IOREMAP_NOCACHE_PRESENT)
+ #define NV_IOREMAP_NOCACHE(ptr, physaddr, size) \
+     { \
+         (ptr) = ioremap_nocache(physaddr, size); \
+         VM_ALLOC_RECORD(ptr, size, "vm_ioremap_nocache"); \
+     }
++#else
++/* ioremap() is non-cached on every architecture now; ioremap_nocache()
++ * was removed as a redundant name. */
++#define NV_IOREMAP_NOCACHE(ptr, physaddr, size) \
++    { \
++        (ptr) = ioremap(physaddr, size); \
++        VM_ALLOC_RECORD(ptr, size, "vm_ioremap_nocache"); \
++    }
++#endif
+ 
+ #if defined(NV_IOREMAP_CACHE_PRESENT)
+ #define NV_IOREMAP_CACHE(ptr, physaddr, size)            \
+@@ -660,19 +791,19 @@
+ 
+ #endif /* !defined NVWATCH */
+ 
++#if defined(NV_SMP_CALL_FUNCTION_RETURNS_INT)
++#define __NV_SMP_CALL_FUNCTION_RET(call) ({ int __ret = (call); __ret; })
++#else
++#define __NV_SMP_CALL_FUNCTION_RET(call) ({ (call); 0; })
++#endif
++
+ #if defined(NV_SMP_CALL_FUNCTION_PRESENT)
+ #if (NV_SMP_CALL_FUNCTION_ARGUMENT_COUNT == 4)
+ #define NV_SMP_CALL_FUNCTION(func, info, wait)               \
+-    ({                                                       \
+-        int __ret = smp_call_function(func, info, 1, wait);  \
+-        __ret;                                               \
+-     })
++    __NV_SMP_CALL_FUNCTION_RET(smp_call_function(func, info, 1, wait))
+ #elif (NV_SMP_CALL_FUNCTION_ARGUMENT_COUNT == 3)
+ #define NV_SMP_CALL_FUNCTION(func, info, wait)               \
+-    ({                                                       \
+-        int __ret = smp_call_function(func, info, wait);     \
+-        __ret;                                               \
+-     })
++    __NV_SMP_CALL_FUNCTION_RET(smp_call_function(func, info, wait))
+ #else
+ #error "NV_SMP_CALL_FUNCTION_ARGUMENT_COUNT value unrecognized!"
+ #endif
+@@ -680,19 +811,19 @@
+ #error "NV_SMP_CALL_FUNCTION() undefined (smp_call_function() unavailable)!"
+ #endif
+ 
++#if defined(NV_ON_EACH_CPU_RETURNS_INT)
++#define __NV_ON_EACH_CPU_RET(call) ({ int __ret = (call); __ret; })
++#else
++#define __NV_ON_EACH_CPU_RET(call) ({ (call); 0; })
++#endif
++
+ #if defined(NV_ON_EACH_CPU_PRESENT)
+ #if (NV_ON_EACH_CPU_ARGUMENT_COUNT == 4)
+ #define NV_ON_EACH_CPU(func, info, wait)               \
+-    ({                                                 \
+-        int __ret = on_each_cpu(func, info, 1, wait);  \
+-        __ret;                                         \
+-     })
++    __NV_ON_EACH_CPU_RET(on_each_cpu(func, info, 1, wait))
+ #elif (NV_ON_EACH_CPU_ARGUMENT_COUNT == 3)
+ #define NV_ON_EACH_CPU(func, info, wait)               \
+-    ({                                                 \
+-        int __ret = on_each_cpu(func, info, wait);     \
+-        __ret;                                         \
+-     })
++    __NV_ON_EACH_CPU_RET(on_each_cpu(func, info, wait))
+ #else
+ #error "NV_ON_EACH_CPU_ARGUMENT_COUNT value unrecognized!"
+ #endif
+@@ -942,14 +1073,26 @@
+ #define NV_PMD_UNMAP(pmd) pmd_unmap(pmd);
+ #else
+ #if defined(PUD_SHIFT) /* 4-level pgtable */
++/*
++ * pud_offset() has taken a p4d_t* (not pgd_t*) since the 5-level
++ * page table support was added (Linux 4.12); on configs without
++ * 5-level paging enabled, p4d is simply folded onto pgd, so this
++ * extra p4d_offset() step is always safe to take unconditionally.
++ */
+ #define NV_PMD_OFFSET(address, pgd)                     \
+    ({                                                   \
+         pmd_t *__pmd = NULL;                            \
++        p4d_t *__p4d;                                   \
+         pud_t *__pud;                                   \
+-        __pud = pud_offset(pgd, address);               \
+-        if ((__pud != NULL) &&                          \
+-            !(pud_bad(*__pud) || pud_none(*__pud)))     \
+-            __pmd = pmd_offset(__pud, address);         \
++        __p4d = p4d_offset(pgd, address);               \
++        if ((__p4d != NULL) &&                          \
++            !(p4d_bad(*__p4d) || p4d_none(*__p4d)))     \
++        {                                                \
++            __pud = pud_offset(__p4d, address);         \
++            if ((__pud != NULL) &&                      \
++                !(pud_bad(*__pud) || pud_none(*__pud))) \
++                __pmd = pmd_offset(__pud, address);     \
++        }                                                \
+         __pmd;                                          \
+     })
+ #else /* 3-level pgtable */
+@@ -1138,6 +1281,7 @@
+ 
+     struct pci_dev *dev;
+     void *agp_bridge;
++    int agp_mtrr_handle;
+     nv_alloc_t *alloc_queue;
+ 
+     /* keep track of any pending bottom halfes */
+diff -ru a/os-agp.c b/os-agp.c
+--- a/os-agp.c	2011-07-15 09:13:42.000000000 +0200
++++ b/os-agp.c	2026-09-17 18:34:04.166719964 +0200
+@@ -121,8 +121,8 @@
+          * be due to the presence of other memory ranges with conflicting
+          * caching  attributes. Play safe and fail AGP initialization.
+          */
+-        if (mtrr_add(agp_info.aper_base, agp_info.aper_size << 20,
+-                MTRR_TYPE_WRCOMB, 0) < 0)
++        if ((nvl->agp_mtrr_handle = NV_MTRR_ADD(agp_info.aper_base,
++                agp_info.aper_size << 20)) < 0)
+ #endif
+         {
+             nv_printf(NV_DBG_ERRORS, 
+@@ -188,7 +188,7 @@
+ failed:
+ #ifdef CONFIG_MTRR
+     if (nv_pat_mode == NV_PAT_MODE_DISABLED)
+-        mtrr_del(-1, agp_info.aper_base, agp_info.aper_size << 20);
++        NV_MTRR_DEL(nvl->agp_mtrr_handle, agp_info.aper_base, agp_info.aper_size << 20);
+ #endif
+ release:
+     NV_AGPGART_BACKEND_RELEASE(drm_agp_p, nvl->agp_bridge);
+@@ -216,7 +216,7 @@
+ 
+ #ifdef CONFIG_MTRR
+     if (nv_pat_mode == NV_PAT_MODE_DISABLED)
+-        mtrr_del(-1, nv->agp.address, nv->agp.size);
++        NV_MTRR_DEL(nvl->agp_mtrr_handle, nv->agp.address, nv->agp.size);
+ #endif
+     NV_IOUNMAP(nv->agp.map, RM_PAGE_SIZE);
+ 
+diff -ru a/os-interface.c b/os-interface.c
+--- a/os-interface.c	2011-07-15 09:13:42.000000000 +0200
++++ b/os-interface.c	2026-09-17 18:34:04.168552416 +0200
+@@ -25,6 +25,20 @@
+ #include "os-interface.h"
+ #include "nv-linux.h"
+ 
++/*
++ * Linux 5.0 removed do_gettimeofday()/struct timeval from the kernel.
++ * Use struct timespec64 + ktime_get_real_ts64() when building against >= 5.0
++ * (NV_TIMESPEC64, defined in nv.h), falling back to the old API below that.
++ */
++#if defined(NV_TIMESPEC64)
++#include <linux/ktime.h>
++#define nv_timeval           struct timespec64
++#define nv_gettime(t)        ktime_get_real_ts64(t)
++#else
++#define nv_timeval           struct timeval
++#define nv_gettime(t)        do_gettimeofday(t)
++#endif
++
+ #if defined(CONFIG_SMP)
+ static atomic_t os_smp_barrier = ATOMIC_INIT(0);
+ 
+@@ -434,12 +448,16 @@
+     U032 *useconds
+ )
+ {
+-    struct timeval tm;
++    nv_timeval tm;
+ 
+-    do_gettimeofday(&tm);
++    nv_gettime(&tm);
+ 
+     *seconds = tm.tv_sec;
++#if defined(NV_TIMESPEC64)
++    *useconds = tm.tv_nsec / NSEC_PER_USEC;
++#else
+     *useconds = tm.tv_usec;
++#endif
+ 
+     return RM_OK;
+ }
+@@ -469,9 +487,9 @@
+     unsigned long usec;
+ 
+ #ifdef NV_CHECK_DELAY_ACCURACY
+-    struct timeval tm1, tm2;
++    nv_timeval tm1, tm2;
+ 
+-    do_gettimeofday(&tm1);
++    nv_gettime(&tm1);
+ #endif
+ 
+     if (in_irq() && (MicroSeconds > NV_MAX_ISR_DELAY_US))
+@@ -486,10 +504,15 @@
+         udelay(usec);
+ 
+ #ifdef NV_CHECK_DELAY_ACCURACY
+-    do_gettimeofday(&tm2);
++    nv_gettime(&tm2);
++#if defined(NV_TIMESPEC64)
++    nv_printf(NV_DBG_ERRORS, "NVRM: osDelayUs %d: 0x%x 0x%x\n",
++        MicroSeconds, tm2.tv_sec - tm1.tv_sec, tm2.tv_nsec - tm1.tv_nsec);
++#else
+     nv_printf(NV_DBG_ERRORS, "NVRM: osDelayUs %d: 0x%x 0x%x\n",
+         MicroSeconds, tm2.tv_sec - tm1.tv_sec, tm2.tv_usec - tm1.tv_usec);
+ #endif
++#endif
+ 
+     return RM_OK;
+ }
+@@ -509,12 +532,12 @@
+     unsigned long MicroSeconds;
+     unsigned long jiffies;
+     unsigned long mdelay_safe_msec;
+-    struct timeval tm_end, tm_aux;
++    nv_timeval tm_end, tm_aux;
+ #ifdef NV_CHECK_DELAY_ACCURACY
+-    struct timeval tm_start;
++    nv_timeval tm_start;
+ #endif
+ 
+-    do_gettimeofday(&tm_aux);
++    nv_gettime(&tm_aux);
+ #ifdef NV_CHECK_DELAY_ACCURACY
+     tm_start = tm_aux;
+ #endif
+@@ -529,7 +552,11 @@
+     }
+ 
+     MicroSeconds = MilliSeconds * 1000;
++#if defined(NV_TIMESPEC64)
++    tm_end.tv_nsec = MicroSeconds * NSEC_PER_USEC;
++#else
+     tm_end.tv_usec = MicroSeconds;
++#endif
+     tm_end.tv_sec = 0;
+     NV_TIMERADD(&tm_aux, &tm_end, &tm_end);
+ 
+@@ -547,7 +574,7 @@
+         if (!NV_IRQL_IS_RAISED())
+         {
+             /* give up the cpu */
+-            current->state = TASK_INTERRUPTIBLE;
++            set_current_state(TASK_INTERRUPTIBLE);
+         } else {
+             nv_printf(NV_DBG_ERRORS, "NVRM: Trying to sleep during raised irql!!\n");
+             nv_printf(NV_DBG_ERRORS, "NVRM:   are we holding a lock?\n");
+@@ -559,11 +586,15 @@
+         {
+             schedule_timeout(jiffies);
+             /* catch the remainder, if any */
+-            do_gettimeofday(&tm_aux);
++            nv_gettime(&tm_aux);
+             if (NV_TIMERCMP(&tm_aux, &tm_end, <))
+             {
+                 NV_TIMERSUB(&tm_end, &tm_aux, &tm_aux); // tm_aux = tm_end - tm_aux
++#if defined(NV_TIMESPEC64)
++                MicroSeconds = tm_aux.tv_nsec / NSEC_PER_USEC + tm_aux.tv_sec * USEC_PER_SEC;
++#else
+                 MicroSeconds = tm_aux.tv_usec + tm_aux.tv_sec * 1000000;
++#endif
+             } else
+                 MicroSeconds = 0;
+         } while ((jiffies = NV_USECS_TO_JIFFIES(MicroSeconds)) != 0);
+@@ -580,11 +611,16 @@
+         udelay(MicroSeconds);
+     }
+ #ifdef NV_CHECK_DELAY_ACCURACY
+-    do_gettimeofday(&tm_aux);
+-    timersub(&tm_aux, &tm_start, &tm_aux);
++    nv_gettime(&tm_aux);
++    NV_TIMERSUB(&tm_aux, &tm_start, &tm_aux);
++#if defined(NV_TIMESPEC64)
++    nv_printf(NV_DBG_ERRORS, "NVRM: osDelay %dmsec: %d.%09dsec\n",
++        MilliSeconds, tm_aux.tv_sec, tm_aux.tv_nsec);
++#else
+     nv_printf(NV_DBG_ERRORS, "NVRM: osDelay %dmsec: %d.%06dsec\n",
+         MilliSeconds, tm_aux.tv_sec, tm_aux.tv_usec);
+ #endif
++#endif
+ 
+     return RM_OK;
+ }
+@@ -922,12 +958,13 @@
+ typedef struct wb_mem_t {
+     unsigned int start;
+     unsigned int size;
++    int mtrr_handle;
+     struct wb_mem_t *next;
+ } wb_mem;
+ 
+ static wb_mem *wb_list = NULL;
+ 
+-int save_wb(unsigned int start, unsigned int size)
++int save_wb(unsigned int start, unsigned int size, int mtrr_handle)
+ {
+     struct wb_mem_t *ptr;
+ 
+@@ -937,13 +974,14 @@
+ 
+     ptr->start = start;
+     ptr->size  = size;
++    ptr->mtrr_handle = mtrr_handle;
+     ptr->next  = wb_list;
+     wb_list    = ptr;
+ 
+     return 1;
+ }
+ 
+-int del_wb(unsigned int start, unsigned int size)
++int del_wb(unsigned int start, unsigned int size, int *mtrr_handle)
+ {
+     struct wb_mem_t *ptr;
+     struct wb_mem_t *prev;
+@@ -957,6 +995,7 @@
+             else
+                 prev->next = ptr->next;
+ 
++            *mtrr_handle = ptr->mtrr_handle;
+             NV_KFREE(ptr, sizeof(struct wb_mem_t));
+             return 1;
+         }
+@@ -986,7 +1025,7 @@
+     if (mode != NV_MEMORY_WRITECOMBINED)
+         return RM_ERROR;
+ 
+-    err = mtrr_add(start, size, MTRR_TYPE_WRCOMB, 0x0);
++    err = NV_MTRR_ADD(start, size);
+     if (err < 0)
+     {
+         nv_printf(NV_DBG_ERRORS, "NVRM: cannot write-combine 0x%08x, %dM\n",
+@@ -994,7 +1033,7 @@
+         return RM_ERROR;
+     }
+ 
+-    save_wb(start, size);
++    save_wb(start, size, err);
+ 
+     return RM_OK;
+ #endif
+@@ -1007,9 +1046,12 @@
+ )
+ {
+ #ifdef CONFIG_MTRR
+-    if (del_wb(start, size))
+     {
+-        mtrr_del(-1, start, size);
++        int mtrr_handle;
++        if (del_wb(start, size, &mtrr_handle))
++        {
++            NV_MTRR_DEL(mtrr_handle, start, size);
++        }
+     }
+     return RM_OK;
+ #endif
