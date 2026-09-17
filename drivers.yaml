@@ -186,9 +186,9 @@ series:
   # 173xx forward-port is build-verified on 5.4, 6.8, 6.12 (amd64+i386) --
   # see docs/forward-port-status/173xx.md. 96xx's own full forward-port is
   # build-verified on the same four targets too -- see
-  # docs/forward-port-status/96xx.md. 71xx: only the select_makefile/
-  # PATCHLEVEL-misdetection blocker is fixed
-  # (kernel/0002); its own full forward-port has not been attempted yet.
+  # docs/forward-port-status/96xx.md. 71xx's own full forward-port is
+  # build-verified on 5.4/6.8 -- see docs/forward-port-status/71xx.md;
+  # trixie/6.12 (the actual kernel_max target) and i386 not yet attempted.
   # ---------------------------------------------------------------------------
   "173xx":
     version: "173.14.39"
