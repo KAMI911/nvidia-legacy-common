@@ -1,0 +1,151 @@
+diff -ru a/conftest.sh b/conftest.sh
+--- a/conftest.sh	2026-09-17 09:13:02.763527942 +0200
++++ b/conftest.sh	2026-09-17 09:10:39.075418204 +0200
+@@ -22,6 +22,32 @@
+ OUTPUT=$4
+ XEN_PRESENT=1
+ 
++#
++# Debian splits kernel-headers into a "-common" package (the real
++# linux/*.h, uapi/*.h etc.) plus a slim per-flavor package that only has
++# include/{config,generated} and arch/ -- its own Makefile is just
++# 'include /path/to/...-common/Makefile'. Real kbuild follows that chain
++# automatically (via $(srctree)); this script's own manually-reconstructed
++# -I/-include paths, rooted at $HEADERS ($SOURCES/include), do not, so
++# linux/kconfig.h (needed for IS_ENABLED() -- without it, basic headers
++# like linux/fs.h fail with cryptic "missing binary operator" errors) and
++# everything else under the shared tree silently don't exist there. Detect
++# the real header root the same way the flavor Makefile does, and add it
++# to the search path too. On a non-split (e.g. Ubuntu) layout this is a
++# no-op: the flavor Makefile doesn't just 'include' a sibling package.
++#
++NV_COMMON_SOURCES="$SOURCES"
++NV_COMMON_HEADERS="$HEADERS"
++if [ -f "$SOURCES/Makefile" ]; then
++    _nv_common=`grep -m1 '^include ' "$SOURCES/Makefile" 2>/dev/null | \
++        sed -e 's/^include[ 	]*//' -e 's,/Makefile[ 	]*$,,'`
++    if [ -n "$_nv_common" ] && [ -d "$_nv_common/include" ] && \
++       [ "$_nv_common" != "$SOURCES" ]; then
++        NV_COMMON_SOURCES="$_nv_common"
++        NV_COMMON_HEADERS="$NV_COMMON_SOURCES/include"
++    fi
++fi
++
+ test_xen() {
+     #
+     # Determine if the target kernel is a Xen kernel. It used to be
+@@ -89,7 +115,8 @@
+ 
+     for FILE in $FILES; do
+         FILE_DEFINE=NV_`echo $FILE | tr '/.' '_' | tr 'a-z' 'A-Z'`_PRESENT
+-        if [ -f $HEADERS/$FILE -o -f $OUTPUT/include/$FILE ]; then
++        if [ -f $HEADERS/$FILE -o -f $OUTPUT/include/$FILE -o \
++             -f $NV_COMMON_HEADERS/$FILE ]; then
+             echo "#define $FILE_DEFINE" >> conftest.h
+         else
+             echo "#undef $FILE_DEFINE" >> conftest.h
+@@ -100,26 +127,42 @@
+ build_cflags() {
+     ARCH=`uname -m | sed -e 's/i.86/i386/'`
+ 
++    #
++    # GCC 14 promoted -Wimplicit-function-declaration (and
++    # -Wimplicit-int/-Wint-conversion) from a warning to a hard error by
++    # default. Most of this script's presence probes -- both the original
++    # ones and the ones added for the forward-port -- rely on calling a
++    # possibly-undeclared function and checking whether the compile still
++    # succeeds (an implicit declaration used to be a harmless warning; a
++    # real prototype rejects a wrong argument count or type
++    # unconditionally, regardless of this flag). Under gcc 14's new
++    # default, EVERY such probe hard-fails whether the function is present
++    # or not, making the whole detection scheme return false negatives
++    # uniformly. Restore the pre-14 behavior explicitly so the rest of
++    # this script keeps working the way it was written.
++    #
+     BASE_CFLAGS="-O2 -D__KERNEL__ \
+ -DKBUILD_BASENAME=\"#conftest$$\" -DKBUILD_MODNAME=\"#conftest$$\" \
++-Wno-error=implicit-function-declaration -Wno-error=implicit-int \
++-Wno-error=int-conversion \
+ -nostdinc -isystem $ISYSTEM"
+ 
+     if [ "$OUTPUT" != "$SOURCES" ]; then
+         OUTPUT_CFLAGS="-I$OUTPUT/include2 -I$OUTPUT/include"
+         if [ -f "$OUTPUT/include/generated/autoconf.h" ]; then
+-            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $OUTPUT/include/generated/autoconf.h"
++            AUTOCONF_CFLAGS="-include $NV_COMMON_HEADERS/linux/kconfig.h -include $OUTPUT/include/generated/autoconf.h"
+         else
+-            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $OUTPUT/include/linux/autoconf.h"
++            AUTOCONF_CFLAGS="-include $NV_COMMON_HEADERS/linux/kconfig.h -include $OUTPUT/include/linux/autoconf.h"
+         fi
+     else
+         if [ -f "$HEADERS/generated/autoconf.h" ]; then
+-            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $HEADERS/generated/autoconf.h"
++            AUTOCONF_CFLAGS="-include $NV_COMMON_HEADERS/linux/kconfig.h -include $HEADERS/generated/autoconf.h"
+         else
+-            AUTOCONF_CFLAGS="-include $HEADERS/linux/kconfig.h -include $HEADERS/linux/autoconf.h"
++            AUTOCONF_CFLAGS="-include $NV_COMMON_HEADERS/linux/kconfig.h -include $HEADERS/linux/autoconf.h"
+         fi
+     fi
+ 
+-    CFLAGS="$CFLAGS $OUTPUT_CFLAGS -I$HEADERS -I$HEADERS/uapi -I$OUTPUT/include/generated/uapi $AUTOCONF_CFLAGS"
++    CFLAGS="$CFLAGS $OUTPUT_CFLAGS -I$HEADERS -I$NV_COMMON_HEADERS -I$HEADERS/uapi -I$NV_COMMON_HEADERS/uapi -I$OUTPUT/include/generated/uapi $AUTOCONF_CFLAGS"
+ 
+     test_xen
+ 
+@@ -143,11 +186,12 @@
+         fi
+     fi
+ 
+-    CFLAGS="$BASE_CFLAGS $MACH_CFLAGS $OUTPUT_CFLAGS -I$HEADERS -I$HEADERS/uapi -I$OUTPUT/include/generated/uapi $AUTOCONF_CFLAGS"
++    CFLAGS="$BASE_CFLAGS $MACH_CFLAGS $OUTPUT_CFLAGS -I$HEADERS -I$NV_COMMON_HEADERS -I$HEADERS/uapi -I$NV_COMMON_HEADERS/uapi -I$OUTPUT/include/generated/uapi $AUTOCONF_CFLAGS"
+ 
+     if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]; then
+         CFLAGS="$CFLAGS -I$SOURCES/arch/x86/include -I$OUTPUT/arch/x86/include/generated"
+         CFLAGS="$CFLAGS -I$SOURCES/arch/x86/include/uapi -I$OUTPUT/arch/x86/include/generated/uapi"
++        CFLAGS="$CFLAGS -I$NV_COMMON_SOURCES/arch/x86/include -I$NV_COMMON_SOURCES/arch/x86/include/uapi"
+     fi
+     if [ -n "$BUILD_PARAMS" ]; then
+         CFLAGS="$CFLAGS -D$BUILD_PARAMS"
+@@ -1834,6 +1878,20 @@
+         # aren't told by KBUILD.
+         #
+         MAKEFILE=$HEADERS/../Makefile
++        #
++        # On a Debian split-headers layout, $HEADERS/../Makefile is the
++        # slim per-flavor package's own Makefile, which is just a one-line
++        # 'include /path/to/...-common/Makefile' stub -- it doesn't itself
++        # contain VERSION/PATCHLEVEL. Those live in the common package's
++        # Makefile ($NV_COMMON_SOURCES, detected above). Fall back to it
++        # when the flavor Makefile doesn't have them (a no-op on a
++        # non-split, e.g. Ubuntu, layout where the two are the same file).
++        #
++        if [ ! -f $MAKEFILE ] || ! grep -q "^VERSION =" $MAKEFILE 2>/dev/null; then
++            if [ -f "$NV_COMMON_SOURCES/Makefile" ]; then
++                MAKEFILE="$NV_COMMON_SOURCES/Makefile"
++            fi
++        fi
+ 
+         if [ -f $MAKEFILE ]; then
+             #
+@@ -1925,7 +1983,8 @@
+         SELECTED_MAKEFILE=""
+ 
+         if [ -f $HEADERS/$FILE -o -f $OUTPUT/include/$FILE -o \
+-             -f $OUTPUT/include/generated/uapi/$FILE ]; then
++             -f $OUTPUT/include/generated/uapi/$FILE -o \
++             -f $NV_COMMON_HEADERS/$FILE ]; then
+             #
+             # We are either looking at a configured kernel source
+             # tree or at headers shipped for a specific kernel.
+diff -ru a/nv-vm.c b/nv-vm.c
+--- a/nv-vm.c	2012-09-01 12:48:26.000000000 +0200
++++ b/nv-vm.c	2026-09-17 08:56:55.234704777 +0200
+@@ -143,7 +143,7 @@
+ #if defined(NV_SCATTERLIST_HAS_PAGE)
+     sg_ptr->page = virt_to_page(base);
+ #else
+-    sg_ptr->page_link = virt_to_page(base);
++    sg_ptr->page_link = (unsigned long)virt_to_page(base);
+ #endif
+     sg_ptr->offset = (unsigned long)base & ~PAGE_MASK;
+     sg_ptr->length  = num_pages * PAGE_SIZE;
