@@ -28,7 +28,7 @@ payload (`install-userspace.sh`).
 | 340xx | AUR nvidia-340xx 0001-0019 + version.h (imported) | **✅ builds on 6.12** — nvidia.ko links (warnings only) |
 | 304xx | flydiscohuebr/nvidia-304 (gated into kernel/) | **✅ builds on 5.4 & 6.8** — nvidia.ko links clean | — |
 | 173xx | nvidia-legacy forward-port (kernel/0001-0004) | **✅ builds on 5.4, 6.8, 6.12 (amd64+i386)** — nvidia.ko links clean, zero warnings | Runtime still needs a GeForce FX card. See forward-port-status/173xx.md. |
-| 96xx | nvidia-legacy forward-port (kernel/0001-0003) | **✅ builds on 5.4 & 6.8** — nvidia.ko links clean | trixie/6.12 (kernel_max target) and i386 not yet re-verified after kernel/0003. Runtime still needs NV1x/NV2x hardware. See forward-port-status/96xx.md. |
+| 96xx | nvidia-legacy forward-port (kernel/0001-0004) | **✅ builds on 5.4, 6.8, 6.12 (amd64+i386)** — nvidia.ko links clean | Runtime still needs NV1x/NV2x hardware. See forward-port-status/96xx.md. |
 | 71xx | forward-port track (roadmap only) | select_makefile blocker fixed (kernel/0002) | Own full forward-port not yet attempted. |
 
 ## 390xx / Linux 6.12 — SOLVED
