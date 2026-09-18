@@ -53,7 +53,17 @@ for so in "$PAYLOAD_LIBS"/*.so."$VER" "$PAYLOAD_LIBS"/*.so.[0-9]*; do
     tls_test_dso.so|*_test_*.so|libvdpau.so.*|libvdpau_trace.so.*|libnvidia-pkcs11.so.*|libGLdispatch.so.*|libOpenGL.so.*|libOpenCL.so.*) continue ;;
     libGL.so.*|libGLX.so.*|libEGL.so.*|libGLESv1_CM.so.*|libGLESv2.so.*)
       # GLVND dispatch libs — ship only when the driver has no libGLX_nvidia
-      if [ "$GLVND" = 1 ]; then continue; fi ;;
+      if [ "$GLVND" = 1 ]; then continue; fi
+      # Pre-GLVND: these SONAMEs (libGL.so.1 etc.) are also owned by the
+      # distro's real libgl1/libegl1 (mesa) -- install into a private
+      # subdirectory instead of the canonical path so both can be installed
+      # side by side; debian/*.postinst/*.prerm register/deregister them as
+      # update-alternatives, which own the canonical .so.1 symlink instead.
+      install -d "$LIBDIR/nvidia-legacy-alt"
+      install -m0644 "$so" "$LIBDIR/nvidia-legacy-alt/$b"
+      sn="$(soname "$so" || true)"
+      [ -n "$sn" ] && [ "$sn" != "$b" ] && ln -sf "$b" "$LIBDIR/nvidia-legacy-alt/$sn" || true
+      continue ;;
     nvidia_drv.so)
       [ "$LIBS_ONLY" = 1 ] && continue
       install -m0644 "$so" "$DEST/usr/lib/xorg/modules/drivers/$b"; continue ;;
