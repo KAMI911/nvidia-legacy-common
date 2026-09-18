@@ -1,0 +1,32 @@
+#!/bin/sh
+set -e
+
+# Undo what postinst's register_alt() did — only on real removal, not on
+# upgrade (the new version's postinst re-registers, idempotently) or plain
+# deconfigure. This has to run here rather than in postrm: by postrm time
+# dpkg has already removed our nvidia-legacy-alt/ files, so there would be
+# nothing left to enumerate the registered alternatives from.
+PKG=nvidia-legacy-@SERIES@-driver-libs
+
+deregister_alt() {
+    # $1 = canonical path, $2 = our private copy (same pair postinst used)
+    name="$(basename "$1")-$(basename "$(dirname "$1")")"
+    update-alternatives --remove "$name" "$2" 2>/dev/null || true
+    dpkg-divert --package "$PKG" --rename --remove "$1" >/dev/null 2>&1 || true
+}
+
+case "$1" in
+    remove)
+        for d in /usr/lib/*/nvidia-legacy-alt; do
+            [ -d "$d" ] || continue
+            ma="$(basename "$(dirname "$d")")"
+            for f in "$d"/*.so.*; do
+                [ -L "$f" ] || continue
+                deregister_alt "/usr/lib/$ma/$(basename "$f")" "$f"
+            done
+        done
+        ;;
+esac
+
+#DEBHELPER#
+exit 0

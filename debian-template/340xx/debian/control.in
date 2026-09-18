@@ -103,10 +103,13 @@ Provides:
 %if glvnd
 %else
 # this series ships its own libGL.so.N / libEGL.so.N directly (pre-GLVND;
-# no libnvidia-gtk2/gtk3-style dlopen split, no glvnd dispatch layer) --
-# those paths are also owned by the distro's real libgl1/libegl1, so the
-# two can never coexist on the same system.
-Conflicts: libgl1, libegl1
+# no libnvidia-gtk2/gtk3-style dlopen split, no glvnd dispatch layer).
+# Those SONAMEs are also owned by the distro's real libgl1/libegl1 (mesa),
+# so the payload copies are installed to a private path and registered as
+# update-alternatives (debian/*.postinst, *.prerm) instead of conflicting
+# outright -- both packages can be installed side by side, with whichever
+# was installed/configured last (or has the higher alternatives priority)
+# owning the live libGL.so.1/libEGL.so.1 symlink.
 %endif
 Description: NVIDIA legacy @VERSION@ driver — runtime libraries
  Every shared library from the NVIDIA @VERSION@ userspace: libGL / libGLX_nvidia

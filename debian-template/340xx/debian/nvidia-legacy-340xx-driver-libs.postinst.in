@@ -1,0 +1,39 @@
+#!/bin/sh
+set -e
+
+# This series is pre-GLVND: it ships its own libGL.so.1 / libEGL.so.1 /
+# libGLESv1_CM.so.1 / libGLESv2.so.2 directly, SONAMEs also owned by the
+# distro's real libgl1/libegl1/libglesv2 (mesa/glvnd). install-userspace.sh
+# stages our copies under usr/lib/<MA>/nvidia-legacy-alt/ instead of the
+# canonical path; here we divert the canonical path away from whatever
+# package would otherwise own it and register our copy as a
+# update-alternatives choice for it, so both can be installed side by
+# side instead of file-conflicting outright.
+PKG=nvidia-legacy-@SERIES@-driver-libs
+
+register_alt() {
+    # $1 = canonical path (e.g. /usr/lib/x86_64-linux-gnu/libGL.so.1)
+    # $2 = our private copy (e.g. .../nvidia-legacy-alt/libGL.so.1)
+    [ -e "$2" ] || return 0
+    name="$(basename "$1")-$(basename "$(dirname "$1")")"
+    dpkg-divert --package "$PKG" --rename --divert "$1.nvidia-legacy" --add "$1" >/dev/null
+    update-alternatives --install "$1" "$name" "$2" 340
+}
+
+case "$1" in
+    configure)
+        for d in /usr/lib/*/nvidia-legacy-alt; do
+            [ -d "$d" ] || continue
+            ma="$(basename "$(dirname "$d")")"
+            # Only the SONAME symlinks (libFOO.so.N) need an alternative --
+            # not the raw versioned file (libFOO.so.340.108) they point at.
+            for f in "$d"/*.so.*; do
+                [ -L "$f" ] || continue
+                register_alt "/usr/lib/$ma/$(basename "$f")" "$f"
+            done
+        done
+        ;;
+esac
+
+#DEBHELPER#
+exit 0
