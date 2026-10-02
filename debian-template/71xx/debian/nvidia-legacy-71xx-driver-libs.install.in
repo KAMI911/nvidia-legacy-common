@@ -1,4 +1,5 @@
 usr/lib/*/lib*.so.*
+usr/lib/*/nvidia-legacy-alt/*
 %if egl
 usr/share/glvnd/egl_vendor.d/*
 %endif
