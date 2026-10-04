@@ -84,7 +84,10 @@ flatten_legacy_fhs() {  # flatten_legacy_fhs <payload-dir>
            "$p/usr/X11R6/lib/modules/drivers" "$p/usr/X11R6/lib/modules/extensions"; do
     [ -d "$d" ] && find "$d" -maxdepth 1 -type f -exec mv -t "$p" {} +
   done
-  rm -rf "$p/usr"
+  # Deliberately NOT `rm -rf "$p/usr"`: usr/src/nv/ is the DKMS kernel module
+  # source (rules.in's SRCD fallback reads it straight from there) and other
+  # subtrees (usr/include, usr/share/{doc,man}) may still be wanted elsewhere.
+  # The dirs moved out of above are left behind empty, which is harmless.
 }
 
 payload="$(extract amd64)" || payload="$(extract i386)" || die "no .run for $series"
