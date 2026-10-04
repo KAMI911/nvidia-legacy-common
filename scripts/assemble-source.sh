@@ -59,8 +59,37 @@ deterministic_tar() {  # deterministic_tar <srcdir-parent> <name> <outfile>
       -C "$1" -cf - "$2" | xz "${NVL_XZ_LEVEL:--6}" -T0 > "$3"
 }
 
+flatten_legacy_fhs() {  # flatten_legacy_fhs <payload-dir>
+  # Pre-~260.xx NVIDIA .run installers extract into a nested FHS tree
+  # (usr/lib, usr/lib32, usr/bin, usr/X11R6/lib/modules/{drivers,extensions})
+  # instead of the flat top-level-files layout every modern .run uses and
+  # install-userspace.sh assumes. Left nested, install-userspace.sh's globs
+  # over the payload root match nothing ("staged 0 lib entries") — confirmed
+  # live for 173/96/71xx (driver-libs shipped empty, file-conflicts autopkgtest
+  # failing with "nvidia GL not in ld cache" because no GL lib was ever
+  # installed at all, not just the alternatives path). Detect this layout by
+  # a usr/ tree with no .so files already sitting at top level, and flatten
+  # it once here so install-userspace.sh needs no series-specific handling.
+  local p="$1"
+  [ -d "$p/usr" ] || return 0
+  find "$p" -maxdepth 1 -name '*.so.*' | grep -q . && return 0
+  log "legacy FHS payload layout detected — flattening usr/ to top level"
+  [ -d "$p/usr/lib" ] && find "$p/usr/lib" -maxdepth 1 -type f -exec mv -t "$p" {} +
+  if [ -d "$p/usr/lib32" ]; then
+    mkdir -p "$p/32"
+    find "$p/usr/lib32" -maxdepth 1 -type f -exec mv -t "$p/32" {} +
+  fi
+  [ -d "$p/usr/bin" ] && find "$p/usr/bin" -maxdepth 1 -type f -exec mv -t "$p" {} +
+  for d in "$p/usr/X11R6/lib" "$p/usr/X11R6/lib/modules" \
+           "$p/usr/X11R6/lib/modules/drivers" "$p/usr/X11R6/lib/modules/extensions"; do
+    [ -d "$d" ] && find "$d" -maxdepth 1 -type f -exec mv -t "$p" {} +
+  done
+  rm -rf "$p/usr"
+}
+
 payload="$(extract amd64)" || payload="$(extract i386)" || die "no .run for $series"
 [ -d "$payload" ] || die "extraction produced no payload dir"
+flatten_legacy_fhs "$payload"
 # strip only installer scaffolding we never ship (keep 32/, kernel/, kernel-open/)
 rm -rf "$payload"/{.manifest,nvidia-installer,nvidia-installer.1.gz,html,.nvidia-installer.swp} 2>/dev/null || true
 mv "$payload" "$work/$top"
@@ -74,6 +103,7 @@ rm -rf "$work/$top"
 
 if [ "$split_i386" = 1 ]; then
   p32="$(extract i386)" && [ -d "$p32" ] || die "--split-i386: no i386 .run"
+  flatten_legacy_fhs "$p32"
   rm -rf "$p32"/{.manifest,nvidia-installer,nvidia-installer.1.gz,html} 2>/dev/null || true
   mv "$p32" "$work/$top"
   t32="$outdir/nvidia-legacy-${series}_${version}.orig-i386.tar.xz"
