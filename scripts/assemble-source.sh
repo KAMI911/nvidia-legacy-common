@@ -84,10 +84,21 @@ flatten_legacy_fhs() {  # flatten_legacy_fhs <payload-dir>
            "$p/usr/X11R6/lib/modules/drivers" "$p/usr/X11R6/lib/modules/extensions"; do
     [ -d "$d" ] && find "$d" -maxdepth 1 -type f -exec mv -t "$p" {} +
   done
-  # Deliberately NOT `rm -rf "$p/usr"`: usr/src/nv/ is the DKMS kernel module
-  # source (rules.in's SRCD fallback reads it straight from there) and other
-  # subtrees (usr/include, usr/share/{doc,man}) may still be wanted elsewhere.
-  # The dirs moved out of above are left behind empty, which is harmless.
+  # usr/lib{,32}/tls/ (pre-NPTL TLS-optimized library variants, dead weight on
+  # any current system) hold a SECOND copy of the same basenames we just
+  # moved out — e.g. usr/lib/tls/libnvidia-tls.so.173.14.39. Left in place,
+  # dh_install's "look in the package root before debian/tmp" fallback finds
+  # these FIRST and the real debian/tmp copies silently never get installed
+  # ("exists in debian/tmp but is not installed to anywhere", confirmed live:
+  # every usr/lib/<MA>/lib*.so.* file for 173/96/71xx went missing this way).
+  # Remove the whole now-redundant usr/lib and usr/lib32 rather than just
+  # their direct files, so no such leftover can resurface.
+  rm -rf "$p/usr/lib" "$p/usr/lib32"
+  # Deliberately NOT `rm -rf "$p/usr"` itself: usr/src/nv/ is the DKMS kernel
+  # module source (rules.in's SRCD fallback reads it straight from there) and
+  # other subtrees (usr/include, usr/share/{doc,man}) may still be wanted
+  # elsewhere. The other dirs moved out of above are left behind empty,
+  # which is harmless.
 }
 
 payload="$(extract amd64)" || payload="$(extract i386)" || die "no .run for $series"
